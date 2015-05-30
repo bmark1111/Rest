@@ -354,7 +354,7 @@ class transaction_controller Extends rest_controller
 		$transactions->orWhere('transaction_split.category_id', $category_id);
 		$transactions->groupEnd();
 		$transactions->where('transaction.transaction_date >= ', $sd);
-		$transactions->where('transaction.transaction_date < ', $ed);
+		$transactions->where('transaction.transaction_date <= ', $ed);
 		$transactions->orderBy('transaction.transaction_date', 'DESC');
 //echo $transactions->builtQuery();die;
 		$transactions->result();
