@@ -1,0 +1,515 @@
+/*
+ ---:: Proove Narcotic Risk Profile Stylesheet ::---
+	 
+	 Last Update:: 10/28/14
+	 
+	 Fonts::
+	 Roboto Slab
+	 PT Sans - (Closest to Myriad Pro)
+	 
+	 Paper size::
+	 8.5 inch x 11 inch / 816px x 1056px
+	 
+	 Margin::
+	 0.5 inch / 48px
+*/
+
+@font-face {
+	font-family: ptSansRegular;
+	src: url('{{cwd}}/fonts/PT_Sans-Web-Regular.ttf');
+	font-weight: 400;
+}
+
+@font-face {
+	font-family: ptSansBold;
+	src: url('{{cwd}}/fonts/PT_Sans-Web-Bold.ttf');
+	font-weight: 700;
+}
+
+@font-face {
+	font-family: robotoSlabRegular;
+	src: url('{{cwd}}/fonts/RobotoSlab-Regular.ttf');
+	font-weight: 400;
+}
+
+@font-face {
+	font-family: robotoSlabBold;
+	src: url('{{cwd}}/fonts/RobotoSlab-Bold.ttf');
+	font-weight: 700;
+}
+
+/* CSS Reset */
+
+h1, h2, h3, h4, p, ul, ol, li {
+	padding: 0;
+	margin: 0;
+	line-height: .17in;
+}
+
+/* ------------ General Structure & Styling ------------ */
+
+.report-wrapper {
+	width: 7.5in;
+	height: 10in;
+	margin: 0 auto;
+	padding: 0.5in;
+}
+
+/* --------------------------
+----------- Header ----------
+----------------------------*/
+
+.report-header {
+	float: left;
+	clear: both;
+	width: 7.5in;
+	height: .81in;
+}
+
+
+.logo, .report-title {
+	float: left;
+	width: 3.75in;
+	height: .81in;
+	
+}
+
+.logo img {
+	float: left;
+	width: 1.76in;
+}
+
+.logo p {
+	float: left;
+	clear: both;
+	padding: .13in 0 0 0;
+	font-family: ptSansBold, helvetica, sans-serif;
+	font-size: 8pt;
+	font-weight: 700;
+	text-align: left;
+	color: #000;
+}
+
+.logo p span {
+	font-weight: 400;
+	color: #707070;
+}
+
+.report-title h1 {
+	font-family: robotoSlabRegular, helvetica, sans-serif;
+	font-size: 17pt;
+	font-weight: 400;
+	text-align: right;
+	color: #606060;
+}
+
+.report-title p {
+	clear: both;
+	margin-top: .07in;
+	font-family: ptSansRegular, helvetica, sans-serif;
+	font-size: 8pt;
+	font-weight: 400;
+	text-align: right;
+	color: #7f7f7f;
+}
+ 
+/* ----------------------------
+--------- Information ---------
+------------------------------*/ 
+
+.report-general-information {
+	float: left;
+	clear: both;
+	width: 7.5in;
+	height: 1.23in;
+	margin: 0 0 .24in 0;
+}
+
+.patient-information {
+	float: left;
+	width: 3.63in;
+	height: 1.23in;
+	border-radius: 0 0 .20in 0;
+	background: linear-gradient(to right, #fff, #f1f0f0);
+}
+
+.patient-photo {
+	float: left;
+	width: 1.23in;
+	height: 1.23in;
+}
+
+.patient-photo img {
+	width: 1.03in;
+	margin: .1in auto 0 auto;
+}
+
+.patient-information-container {
+	float: left;
+	width: 2.40in;
+	height: 1.23in;
+}
+
+.patient-information-container .title h2 {
+	float: left;
+	clear: both;
+	width: 2.25in;
+	padding: .13in 0 .07in 0;
+	font-family: robotoSlabBold, helvetica, sans-serif;
+	font-size: 10pt;
+	font-weight: 700;
+	text-align: left;
+	color: #000;
+}
+
+.patient-information-container .information {
+	float: left;
+	clear: both;
+	width: 2.40in;
+}
+
+.patient-information-container .title-section, .patient-information-container  .information-section {
+	float: left;
+}
+
+.patient-information-container .title-section p, .patient-information-container  .information-section p {
+	padding: .01in 0;
+	font-size: 8pt;
+	color: #707070;
+}
+
+.title-section p {
+	width: 1in;
+	font-family: robotoSlabRegular, helvetica, sans-serif;
+}
+
+.information-section p {
+	font-family: ptSansRegular, helvetica, sans-serif;
+}
+
+.service-dates {
+	float: left;
+	width: 1.9in;
+	height: 1.23in;
+	padding: .03in 0 0 0;
+}
+
+.date-information {
+	float: left;
+	clear: both;
+	width: 2.25in;
+	padding: .09in 0 0 0;
+}
+
+.account-information {
+	float: left;
+	width: 1.97in;
+	height: 1.23in;
+}
+
+.date-information h4, .account-information h4 {
+	padding: 0 0 0 .35in;
+	font-family: ptSansBold, helvetica, sans-serif;
+	font-size: 8pt;
+	font-weight: 700;
+	color: #000;
+}
+
+.date-information p, .account-information p {
+	padding: 0 0 0 .35in;
+	font-family: ptSansRegular, helvetica, sans-serif;
+	font-size: 8pt;
+	font-weight: 400;
+	color: #707070;
+
+}
+
+/* ------------------------
+--------- Results ---------
+---------------------------*/
+
+
+.report-results {
+	float: left;
+	clear: both;
+	width: 7.5in;
+	height: 6.87in;
+	border-radius: 0 0 .20in 0;
+	background: url('{{cwd}}/images/brain_bg.png') #f0f0f0 no-repeat .91in 1.44in;
+	background-size: 6.26in;
+}
+
+.report-results .risk-index-container {
+	width: 7.5in;
+	height: 1.78in;
+}
+
+.report-results .risk-index-container .risk-index {
+	width: 7.5in;
+	height: 1.37in;
+	background-color: #e3e5e7;
+}
+
+.risk-index-graph-container {
+	float: left;
+	width: 1.78in;
+	height:1.78in;
+	
+}
+
+.risk-index-graph {
+	width: 1.70in;
+	height:1.70in;
+	margin: .14in 0 0 .14in;
+	border-radius: 50%;
+	background: linear-gradient(to right, rgba(255,255,255,0), #f2f2f2)
+}
+
+.risk-index-detail {
+	float: left;
+	width: 2in;
+	height: 1.37in;
+}
+
+.risk-index-detail h2 {
+	width: 2.25in;
+	margin: 0 0 .07in 0;
+	padding: .20in 0 .02in .10in;
+	font-family: robotoSlabBold, helvetica, sans-serif;
+	font-size: 10pt;
+	font-weight: 700;
+	text-align: left;
+	color: #000;
+	background: url('{{cwd}}/images/risk_border.png') no-repeat bottom left transparent;
+	background-size: 1.40in;
+}
+
+.risk-score-container, .predicted-risk-container {
+	padding: 0 0 .05in .3in;
+}
+
+.risk-score-container h4, .predicted-risk-container h4 {
+	font-family: ptSansBold, helvetica, sans-serif;
+	font-size: 11pt;
+	font-weight: 700;
+	text-align: left;
+	color: #000;
+}
+
+.risk-score-container p, .predicted-risk-container p {
+	font-family: ptSansRegular, helvetica, sans-serif;
+	font-size: 8pt;
+	font-weight: 400;
+	text-align: left;
+	color: #000;
+}
+
+.predicted-risk-container .risk-icon {
+	width: .20in;
+	height: .20in;
+	position: relative;
+	top: -0.17in;
+	left: .3in;
+	text-align: center;
+	border-radius: 50%;
+	background-color: #fff;
+	
+}
+
+.predicted-risk-container .risk-icon span {
+	font-size: 10pt;
+	color: #fbad17;
+	text-align: center;
+}
+
+
+.risk-index-recommendation {
+	float: left;
+	width: 3.72in;
+	height: 1.37in;
+}
+
+.risk-index-recommendation ul {
+	padding: .08in;
+}
+
+.risk-index-recommendation ul li {
+	padding: .13in .09in 0 0;
+	font-family: ptSansRegular, helvetica, sans-serif;
+	font-size: 7pt;
+	font-weight: 400;
+	line-height: .14in;
+	text-align: left;
+	color: #707070;
+}
+
+.snp-breakdown-container {
+	width: 7.5in;
+	height: 5.09in;
+}
+
+.snp-container {
+	float: left;
+	clear: both;
+	width: 2.7in;
+	height: 5.09in;
+	padding: .09in 0 0 0;
+}
+
+.snp {
+	float: left;
+	width: 2.06in;
+	height: .33in;
+	padding: .08in 0 0 .28in;
+}
+
+.snp p {
+	font-family: ptSansBold, helvetica, sans-serif;
+	font-size: 8pt;
+	font-weight: 700;
+	text-align: left;
+	color: #000;
+}
+
+.snp p span {
+	display: block;
+	font-family: ptSansRegular, helvetica, sans-serif;
+	font-size: 7pt;
+	font-weight: 400;
+	text-align: left;
+	color: #939292;
+}
+
+
+.genotype {
+	float: left;
+	clear: right;
+	width: .33in;
+	height: .33in;
+	border-radius: 50%;
+	background-color: #d3d3d3;
+	text-align: center;
+	
+}
+
+.genotype p {
+	margin: .085in 0 0 0;
+	font-family: ptSansBold, helvetica, sans-serif;
+	font-size: 7pt;
+	font-weight: 700;
+	color: #000;
+}
+
+.ort-container {
+	float: left;
+	width: 4.8in;
+	height: 5.09in;
+}
+
+.ort {
+	width: 3.24in;
+	height: 1.81in;
+	position: relative;
+	top: 3.19in;
+	left: 1.57in;
+}
+
+.ort ul {
+	background: url('{{cwd}}/images/ort_bg.png') no-repeat transparent .87in .099in ;
+	background-size: 1.657in; 
+}
+
+.ort ul li {
+	height: .18in;
+	margin: .09in 0 0 0;
+	list-style: none;
+}
+
+.ort ul li p {
+	float: left;
+	width: 2.56in;
+	font-family: ptSansRegular, helvetica, sans-serif;
+	font-size: 8pt;
+	font-weight: 400;
+	color: #707070;
+	
+}
+
+
+.ort ul li span.ort-indicator {
+	display: block;
+	float: left;
+	width: .11in;
+	height: .11in;
+	margin: .05in 0 0 0;
+	border-radius: 50%;
+	background-color: #a4a4a4;
+}
+
+.ort-red {
+	background-color: #ed202d !important;
+}
+
+.ort-green {
+	background-color: #b2d234 !important;
+}
+
+
+.ort ul li p.ort-value {
+	float: left;
+	width: .2in;
+	margin: .02in 0 0 .08in;
+	font-family: ptSansRegular, helvetica, sans-serif;
+	font-size: 8pt;
+	font-weight: 400;
+	color: #707070;
+	
+}
+
+.ort ul li span {
+	margin: .02in .08in 0 0;
+	font-family: robotoSlabBold, helvetica, sans-serif;
+	font-size: 10pt;
+	font-weight: 700;
+	color: #000;
+}
+
+
+/* -----------------------
+--------- footer ---------
+--------------------------*/
+
+.report-footer {
+	float: left;
+	clear: both;
+	width: 7.5in;
+	height: .86in;
+	padding: .27in 0 0 0;
+}
+
+.footer-logo {
+	float: left;
+	width: 1.34in;
+}
+
+.footer-logo img {
+	width: 1.20in;
+	padding: .11in 0 0 0;
+}
+
+.company-information {
+	float: left;
+	width: 6.16in;
+}
+
+.company-information p {
+	font-family: ptSansRegular, helvetica, sans-serif;
+	font-size: 7pt;
+	font-weight: 400;
+	color: #707070;
+}
+
+.company-information p span {
+	float: right;
+}
+
