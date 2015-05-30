@@ -1,0 +1,15 @@
+Type,Post Date,Description,Amount,Check or Slip #
+CREDIT,05/22/2015,"BANK OF AMERICA  FndTrnsfr                  PPD ID: 2941721694",1000.00,
+CREDIT,05/21/2015,"Online Transfer from CHK ...9570 transaction#: 4643876773",185.00,
+CREDIT,05/21/2015,"Online Transfer from CHK ...9570 transaction#: 4643875927",50.00,
+CREDIT,05/21/2015,"Online Transfer from CHK ...9570 transaction#: 4643878956",10.68,
+DEBIT,05/20/2015,"ENTERPRISE RENT-A-CAR TUSTIN CA              05/19",100.00,
+DEBIT,05/20/2015,"BAJA FRESH 10063 IRVINE CA                   05/18",-7.05,
+CHECK,05/20/2015,"CHECK 209 ",-50.00,209
+DEBIT,05/19/2015,"Online Transfer to CHK ...2339 transaction#: 4639594782 05/19",-313.48,
+CHECK,05/19/2015,"CHECK 222 ",-830.15,222
+CREDIT,05/18/2015,"Online Transfer from CHK ...9570 transaction#: 4637791736",1000.00,
+CREDIT,05/18/2015,"Online Transfer from CHK ...9570 transaction#: 4638603880",300.00,
+CREDIT,05/18/2015,"Online Transfer from CHK ...9570 transaction#: 4637788465",64.49,
+CHECK,05/18/2015,"CHECK 228 ",-655.15,228
+CHECK,05/18/2015,"CHECK 227 ",-300.00,227
