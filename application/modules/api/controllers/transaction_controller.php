@@ -70,8 +70,6 @@ class transaction_controller Extends rest_controller
 		$categories->result();
 		if ($categories->numRows())
 		{
-//			$this->ajax->setData('categories', $categories);
-
 			$interval = $this->input->get('interval');
 			if (!is_numeric($interval))
 			{
@@ -171,7 +169,6 @@ class transaction_controller Extends rest_controller
 				$accounts->row();
 
 				$running_total = $balance->balance_forward + $accounts->balance;
-//				$this->ajax->setData('balance_forward', $running_total);
 
 				$data = array();
 				$output = array();
@@ -302,13 +299,6 @@ class transaction_controller Extends rest_controller
 			foreach ($transactions as $transaction)
 			{
 				isset($transaction->category);
-//				$total = 0;
-//				foreach($transaction->splits as $category)
-//				{
-//					$total += $category->amount;
-//					isset($category->category);
-//				}
-//				$transaction->total = $total;
 			}
 			$this->ajax->setData('result', $transactions);
 		} else {
