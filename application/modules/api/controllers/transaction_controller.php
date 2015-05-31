@@ -109,7 +109,7 @@ class transaction_controller Extends rest_controller
 					$sd = date('Y-m-d', strtotime($this->budget_start_date . " +" . $start_day . " Days"));
 					$ed = date('Y-m-d', strtotime($this->budget_start_date . " +" . $end_day . " Days"));
 
-					$sql[] = "WHERE T.transaction_date >= '" . $sd . "' AND T.transaction_date < '" . $ed . "'";
+					$sql[] = "WHERE T.transaction_date >= '" . $sd . "' AND T.transaction_date < '" . $ed . "' AND T.is_deleted = 0";
 					$sql[] = "GROUP BY DAYOFYEAR(T.transaction_date)";
 					$sql[] = "ORDER BY DAYOFYEAR(T.transaction_date) ASC";
 					break;
@@ -120,7 +120,7 @@ class transaction_controller Extends rest_controller
 					$sd = date('Y-m-d', strtotime($this->budget_start_date . " +" . $start_day . " Days"));
 					$ed = date('Y-m-d', strtotime($this->budget_start_date . " +" . $end_day . " Days"));
 
-					$sql[] = "WHERE T.transaction_date >= '" . $sd . "' AND T.transaction_date < '" . $ed . "'";
+					$sql[] = "WHERE T.transaction_date >= '" . $sd . "' AND T.transaction_date < '" . $ed . "' AND T.is_deleted = 0";
 					$sql[] = "GROUP BY DAYOFYEAR(T.transaction_date)";
 					$sql[] = "ORDER BY DAYOFYEAR(T.transaction_date) ASC";
 					break;
@@ -134,7 +134,7 @@ class transaction_controller Extends rest_controller
 					$sd = date('Y-m-d', strtotime($this->budget_start_date . " +" . $start_month . " Months"));
 					$ed = date('Y-m-d', strtotime($this->budget_start_date . " +" . $end_month . " Months"));
 
-					$sql[] = "WHERE T.transaction_date >= '" . $sd . "' AND T.transaction_date < '" . $ed . "'";
+					$sql[] = "WHERE T.transaction_date >= '" . $sd . "' AND T.transaction_date < '" . $ed . "' AND T.is_deleted = 0";
 					$sql[] = "GROUP BY MONTH(T.transaction_date)";
 					$sql[] = "ORDER BY MONTH(T.transaction_date) ASC";
 					break;
