@@ -88,14 +88,14 @@ class forecast_controller Extends rest_controller
 					case 'weekly':
 						$offset = $this->_getOffsetDay();
 						$start_day = ($offset - ($this->budget_interval * ($this->budget_views - $interval)));		// -6 entries
-						$end_day = ($offset + ($this->budget_interval * ($this->budget_views + $interval - 1)));	// +6 entries
+						$end_day = ($offset + ($this->budget_interval * ($this->budget_views + $interval)) - 1);	// +6 entries
 						$sd = date('Y-m-d', strtotime($this->budget_start_date . " +" . $start_day . " Days"));
 						$ed = date('Y-m-d', strtotime($this->budget_start_date . " +" . $end_day . " Days"));
 						break;
 					case 'bi-weekly':
 						$offset = $this->_getOffsetDay();
 						$start_day = ($offset - ($this->budget_interval * ($this->budget_views - $interval)));		// -6 entries
-						$end_day = ($offset + ($this->budget_interval * ($this->budget_views + $interval - 1)));	// +6 entries
+						$end_day = ($offset + ($this->budget_interval * ($this->budget_views + $interval)) - 1);	// +6 entries
 						$sd = date('Y-m-d', strtotime($this->budget_start_date . " +" . $start_day . " Days"));
 						$ed = date('Y-m-d', strtotime($this->budget_start_date . " +" . $end_day . " Days"));
 						break;
@@ -104,7 +104,7 @@ class forecast_controller Extends rest_controller
 					case 'monthly':
 						$offset = date('n');
 						$start_month = ($offset - ($this->budget_interval * ($this->budget_views - $interval)));
-						$end_month = ($offset + ($this->budget_interval * ($this->budget_views + $interval - 1)));
+						$end_month = ($offset + ($this->budget_interval * ($this->budget_views + $interval)) - 1);
 						$sd = date('Y-m-d', strtotime($this->budget_start_date . " +" . $start_month . " Months"));
 						$ed = date('Y-m-d', strtotime($this->budget_start_date . " +" . $end_month . " Months"));
 						break;
