@@ -36,6 +36,7 @@ class upload_controller Extends rest_controller
 	
 	private function _loadAll($params)
 	{
+		$status				= (!empty($params['status'])) ? $params['status']: FALSE;
 		$date				= (!empty($params['date'])) ? date('Y-m-d', strtotime($params['date'])): FALSE;
 		$description		= (!empty($params['description'])) ? $params['description']: FALSE;
 		$amount				= (!empty($params['amount'])) ? $params['amount']: FALSE;
@@ -47,7 +48,11 @@ class upload_controller Extends rest_controller
 		$transactions = new transaction_upload();
 		$transactions->select('SQL_CALC_FOUND_ROWS *', FALSE);
 		$transactions->whereNotDeleted();
-		$transactions->where('status', 0);	// only get pending upload tranactions
+		if ($status)
+		{
+			$status -= 1;
+			$transactions->where('status', $status);
+		}
 		if ($date)
 		{
 			$transactions->where('transaction_date', $date);
@@ -63,12 +68,21 @@ class upload_controller Extends rest_controller
 		$transactions->limit($pagination_amount, $pagination_start);
 		$transactions->orderBy($sort, $sort_dir);
 		$transactions->result();
-//echo $transactions->lastQuery();
-//die;
+
 		$this->ajax->setData('total_rows', $transactions->foundRows());
 
 		if ($transactions->numRows())
 		{
+			$pending_count = 0;
+			foreach ($transactions as $transaction)
+			{
+				isset($transaction->bank_account->bank);
+				if ($transaction->status == 0)
+				{
+					$pending_count++;
+				}
+			}
+			$this->ajax->setData('pending_count', $pending_count);
 			$this->ajax->setData('result', $transactions);
 		} else {
 			$this->ajax->addError(new AjaxError("No uploads found"));
