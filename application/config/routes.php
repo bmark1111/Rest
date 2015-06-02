@@ -64,10 +64,14 @@ $route['data/upload/assign']					= "api/upload/assign";				// GET - assign uploa
 $route['data/upload/post']						= "api/upload/post";				// POST - post uploaded transactionS
 $route['data/upload/delete']					= "api/upload/delete";				// GET - delete uploaded transactionS
 
-$route['data/setting/load']						= "api/setting/load";				// GET - load settings
-
-$route['data/category']							= "api/category";					// GET - get categories
+$route['data/bank/load']						= "api/bank/load";					// GET - get all banks
 $route['data/bank/accounts']					= "api/bank/accounts";				// GET - get bank accounts
+$route['data/bank/delete']						= "api/bank/delete";				// GET - delete bank
+$route['data/bank/edit']						= "api/bank/edit";					// GET - edit bank
+$route['data/bank/save']						= "api/bank/save";					// POST - save bank
+
+$route['data/setting/load']						= "api/setting/load";				// GET - load settings
+$route['data/category']							= "api/category";					// GET - get categories
 
 $route['upload/(:num)/(:num)']					= "upload/index/$1/$2";				// Upload transactions
 

@@ -14,16 +14,10 @@ class bank_account extends Nagilum
 	public $autoPopulateHasOne = FALSE;
 	public $autoPopulateHasMany = FALSE;
 
-	public function __construct()
+	public function __construct($id = FALSE)
 	{
-		parent::__construct();
+		parent::__construct($id);
 	}
 
-//	public function postResultHook()
-//	{
-//		parent::postResultHook();
-//		
-//		isset($this->bank);
-//	}
 }
 //EOF
