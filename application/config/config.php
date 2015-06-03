@@ -400,12 +400,12 @@ $config['enable_profiler'] = FALSE;
 | This is the live copy of the information you use to connect to the database
 |
 */
-die('config.php 000000');
-$config['database']['hostname'] = 'helix.c9vojabzt8xk.us-west-2.rds.amazonaws.com:3306';
-$config['database']['username'] = 'root';
-$config['database']['password'] = 'devnowplease';
-$config['database']['database'] = 'biohelix';
-$config['database']['dbdriver'] = 'mysql';
+
+$config['database']['hostname'] = 'localhost';
+$config['database']['username'] = 'budget';
+$config['database']['password'] = 'budget';
+$config['database']['database'] = 'bdm_budget';
+$config['database']['dbdriver'] = 'mysqli';
 $config['database']['dbprefix'] = '';
 $config['database']['pconnect'] = TRUE;
 $config['database']['db_debug'] = TRUE;
@@ -420,8 +420,4 @@ $config['database']['stricton'] = FALSE;
 require_once(dirname(__FILE__).'/version.php');
 
 $config['pbio_version'] = floatval($config['version']['major'] . '.'  . $config['version']['minor']);
-
-/* End of file config.php: yeah it is! (testing post-commit hook2) */
-/* Location: ./application/config/config.php */
-
 

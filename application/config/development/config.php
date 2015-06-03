@@ -404,11 +404,10 @@ $config['controller_suffix'] = '_controller';
 */
 $config['enable_profiler'] = FALSE;
 
-//die('config.php 111111');
 $config['database']['hostname'] = 'localhost';
 $config['database']['username'] = 'budget';
 $config['database']['password'] = 'budget';
-$config['database']['database'] = 'unitedf_collab';
+$config['database']['database'] = 'bdm_budget';
 $config['database']['dbdriver'] = 'mysqli';
 $config['database']['dbprefix'] = '';
 $config['database']['pconnect'] = TRUE;
@@ -424,8 +423,4 @@ $config['database']['stricton'] = FALSE;
 require_once(dirname(dirname(__FILE__)).'/version.php');
 
 $config['pbio_version'] = floatval($config['version']['major'] . '.'  . $config['version']['minor']);
-
-/* End of file config.php */
-/* Location: ./application/config/config.php */
-
 
