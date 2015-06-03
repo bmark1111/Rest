@@ -40,7 +40,9 @@ class forecast_controller Extends rest_controller
 				$this->budget_interval_unit = 'Months';
 				break;
 			default:
-				throw new Exception("Invalid budget_mode setting");
+//				throw new Exception("Invalid budget_mode setting");
+				$this->ajax->addError(new AjaxError("Invalid budget_mode setting (forecast controller)"));
+				$this->ajax->output();
 		}
 
 		$config->getBy('name', 'budget_start_date');
@@ -109,7 +111,9 @@ class forecast_controller Extends rest_controller
 						$ed = date('Y-m-d', strtotime($this->budget_start_date . " +" . $end_month . " Months"));
 						break;
 					default:
-						throw new Exception("Invalid budget_mode setting");
+//						throw new Exception("Invalid budget_mode setting");
+						$this->ajax->addError(new AjaxError("Invalid budget_mode setting (forecast/load)"));
+						$this->ajax->output();
 				}
 
 				// now calculate the balance brought forward

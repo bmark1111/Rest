@@ -40,7 +40,9 @@ class transaction_controller Extends rest_controller
 				$this->budget_interval_unit = 'Months';
 				break;
 			default:
-				throw new Exception("Invalid budget_mode setting");
+//				throw new Exception("Invalid budget_mode setting");
+				$this->ajax->addError(new AjaxError("Invalid budget_mode setting (transaction controller)"));
+				$this->ajax->output();
 		}
 
 		$config->getBy('name', 'budget_start_date');
@@ -137,7 +139,9 @@ class transaction_controller Extends rest_controller
 					$sql[] = "ORDER BY MONTH(T.transaction_date) ASC";
 					break;
 				default:
-					throw new Exception("Invalid budget_mode setting");
+//				throw new Exception("Invalid budget_mode setting");
+				$this->ajax->addError(new AjaxError("Invalid budget_mode setting (transaction/load)"));
+				$this->ajax->output();
 			}
 //die(implode(' ', $sql));
 			$transactions = new transaction();
