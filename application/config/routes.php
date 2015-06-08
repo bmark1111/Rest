@@ -42,7 +42,7 @@ $route['default_controller'] = "api";
 $route['404_override'] = '';
 
 $route['login']									= "user/login";						// GET - login
-$route['logout']								= "user/logout";					// GET - logout
+$route['data/logout']							= "user/logout";					// POST - logout
 
 $route['data/transaction/load']					= "api/transaction/load";			// GET - load transactions
 $route['data/transaction/these']				= "api/transaction/these";			// GET - load transactions for period and category

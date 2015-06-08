@@ -115,6 +115,9 @@ class EP_Controller extends MX_Controller
 		// load any remaining libraries that are necessary
 		$this->loadLibraries();
 
+//$this->ajax->set_header("You are not authorzed xxxxxxxxx", '401');
+//exit;
+
 		if (APPLICATION == 'REST')
 		{
 			$uri = explode('/', uri_string());
