@@ -56,9 +56,6 @@ class EP_Controller extends MX_Controller
 			throw new Exception('Invalid application requested');
 		}
 
-		// get the account trying to be accessed
-		$account = $_SERVER['HTTP_ACCOUNTID'];
-
 		// if the server environment variable has been set use it to override the environment
 		if (isset($_SERVER['ENVIRONMENT']))
 		{
@@ -70,18 +67,16 @@ class EP_Controller extends MX_Controller
 			$this->sPrefix = $_SERVER['PREFIX'] . '_';
 		}
 
-		// build up the configuration information here
-		//$this->load->database();		// commenting this out fixed the extra row at start in csv download files
-
-		// switch to the configured DB
-//		$db = $this->config->item('database');
-//		$this->switchDatabase($db['database']);
 		// switch to the master DB
 		$this->switchDatabase('budget_master');
 
+		// get the account trying to be accessed
+		$referer = explode('//', $_SERVER['HTTP_REFERER']);
+		$referer = explode('.', $referer[1]);
+
 		// query the master database for the correct account information
 		$this->db->from('account');
-		$this->db->where('domain', $account);
+		$this->db->where('domain', $referer[0]);
 		$oQuery = $this->db->get();
 
 		// make sure that only one result is found

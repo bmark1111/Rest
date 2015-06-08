@@ -20,12 +20,12 @@ class logout_controller extends EP_Controller
 		$_POST = json_decode($input, TRUE);
 
 		$user_session = new user_session();
-		$user_session->where('user_id', $_POST['userId']);
-		$user_session->where('id', $_POST['token_id']);
+//		$user_session->where('user_id', $_POST['userId']);
+		$user_session->where('id', $_POST['TOKENID']);
 		$user_session->row();
 		if ($user_session->numRows())
 		{	// expire the session
-			$sql = "UPDATE user_session set expire = '" . date('Y-m-d H:i:s') . "' WHERE id = '" . $_POST['token_id'] . "' AND user_id = " . $_POST['userId'];
+			$sql = "UPDATE user_session set expire = '" . date('Y-m-d H:i:s') . "' WHERE id = '" . $_POST['TOKENID'] . "'";// AND user_id = " . $_POST['userId'];
 			$user_session->queryAll($sql);
 		} else {
 			$this->ajax->addError(new AjaxError("Error logging out - session not found"));

@@ -30,12 +30,11 @@ class login_controller extends EP_Controller
 		$data['error'] = '';
 		if (!empty($username) && !empty($password) && $user->login($username, $password))
 		{
-//print_r($_SERVER);die;
 			$user->last_login		= date('Y-m-d H:i:s');
 			$user->last_session_id	= md5(uniqid(mt_rand(), TRUE));
 			$user->save();
 			$this->ajax->setData('user', $user);
-//print $user;
+
 			$user_session = new user_session();
 			$user_session->ip_address		= $_SERVER['REMOTE_ADDR'];
 			$user_session->http_referrer	= $_SERVER['HTTP_REFERER'];
@@ -43,9 +42,8 @@ class login_controller extends EP_Controller
 			$user_session->id				= $user->last_session_id;
 			$user_session->user_id			= $user->id;
 			$user_session->expire			= date('Y-m-d H:i:s', strtotime('+30 MINS'));
-//print $user_session;
-//die;
 			$user_session->save();
+//echo $user_session->lastQuery();die;
 		} else {
 			$this->ajax->addError(new AjaxError('Your login credentials are incorrect'));
 		}
