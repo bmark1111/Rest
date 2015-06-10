@@ -44,19 +44,20 @@ $route['404_override'] = '';
 $route['login']									= "user/login";						// GET - login
 $route['data/logout']							= "user/logout";					// POST - logout
 
-$route['data/transaction/load']					= "api/transaction/load";			// GET - load transactions
-$route['data/transaction/these']				= "api/transaction/these";			// GET - load transactions for period and category
+$route['data/dashboard/load']					= "api/dashboard/load";				// GET - load dashboard transactions
+$route['data/dashboard/these']					= "api/dashboard/these";			// GET - load dashboard transactions for interval and category
+$route['data/dashboard/load2']					= "api/dashboard/load2";			// GET - load dashboard forecast
+$route['data/dashboard/this']					= "api/dashboard/this";				// GET - load dashboard forecast transactions for interval and category
+
 $route['data/transaction/loadAll']				= "api/transaction/loadAll";		// GET - load all transactions in list
 $route['data/transaction/delete']				= "api/transaction/delete";			// GET - delete transaction
 $route['data/transaction/edit']					= "api/transaction/edit";			// GET - edit transaction
 $route['data/transaction/save']					= "api/transaction/save";			// POST - save transaction
 
-$route['data/forecast/load']					= "api/forecast/load";				// GET - load forecast
 $route['data/forecast/loadAll']					= "api/forecast/loadAll";			// GET - load all forecasts in list
 $route['data/forecast/delete']					= "api/forecast/delete";			// GET - delete forecast
 $route['data/forecast/edit']					= "api/forecast/edit";				// GET - edit forecast
 $route['data/forecast/save']					= "api/forecast/save";				// POST - save forecast
-$route['data/forecast/this']					= "api/forecast/this";				// GET - load forecast transactions for period and category
 
 $route['data/upload/counts']					= "api/upload/counts";				// GET - get pending uploaded transactions count
 $route['data/upload/loadAll']					= "api/upload/loadAll";				// GET - load all uploaded transactions in list

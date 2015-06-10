@@ -8,7 +8,7 @@ require_once ('rest_controller.php');
 class forecast_controller Extends rest_controller
 {
 	protected $debug = TRUE;
-	private $budget_mode = FALSE;
+/*	private $budget_mode = FALSE;
 	private $budget_start_date = FALSE;
 	private $budget_interval = FALSE;
 	private $budget_interval_unit = FALSE;
@@ -49,7 +49,7 @@ class forecast_controller Extends rest_controller
 		$this->budget_start_date  = $config->value;
 		$this->budget_views = 6;						// TODO: this should be passed in to accomodate more budget intervals
 	}
-
+*/
 	public function index()
 	{
 //		$this->ajax->set_header("Forbidden", '403');
@@ -57,7 +57,7 @@ class forecast_controller Extends rest_controller
 		$this->ajax->output();
 	}
 
-	public function load()
+/*	public function load()
 	{
 		if ($_SERVER['REQUEST_METHOD'] != 'GET')
 		{
@@ -227,7 +227,7 @@ class forecast_controller Extends rest_controller
 		$this->ajax->output();
 
 	}
-
+*/
 	public function loadAll()
 	{
 		if ($_SERVER['REQUEST_METHOD'] != 'GET')
@@ -482,55 +482,55 @@ class forecast_controller Extends rest_controller
 		$this->ajax->output();
 	}
 
-	private function _getForecastByCategory($categories, $forecast, $start_date)
-	{
-		$sd = strtotime($start_date);																		// start date of forecast interval
-		$ed = strtotime($start_date . " +" . $this->budget_interval . " " . $this->budget_interval_unit);	// end date of forecast interval
-		$data = array();
-		foreach ($categories as $x => $category)
-		{
-			$data[$category->id] = 0;
-			foreach ($forecast as $fc)
-			{
-				if ($fc->category_id == $category->id)
-				{
-					if (!empty($fc->next_due_dates))
-					{
-						foreach ($fc->next_due_dates as $next_due_date)
-						{
-							$fd = strtotime($next_due_date);
-							if ($fd >= $sd && $fd < $ed)// && $ed >= time())						// while next due date still inside forecast interval
-							{
-								switch ($fc->type)
-								{
-									case 'DSLIP':
-									case 'CREDIT':
-										$data[$category->id] += $fc->amount;
-										break;
-									case 'DEBIT':
-									case 'CHECK':
-										$data[$category->id] -= $fc->amount;
-										break;
-								}
-							}
-						}
-					}
-				}
-			}
-		}
-		return $data;
-	}
-
-	private function _getOffsetDay()
-	{
-		$sd = date('z', strtotime($this->budget_start_date));
-		$xx =  time();
-		$yy = intval(strtotime($this->budget_start_date));
-		$xx = ($xx - $yy) / (24 * 60 * 60);
-		$xx = ceil($xx / $this->budget_interval);
-		return ($xx * $this->budget_interval) + 1 - $sd;
-	}
-
+//	private function _getForecastByCategory($categories, $forecast, $start_date)
+//	{
+//		$sd = strtotime($start_date);																		// start date of forecast interval
+//		$ed = strtotime($start_date . " +" . $this->budget_interval . " " . $this->budget_interval_unit);	// end date of forecast interval
+//		$data = array();
+//		foreach ($categories as $x => $category)
+//		{
+//			$data[$category->id] = 0;
+//			foreach ($forecast as $fc)
+//			{
+//				if ($fc->category_id == $category->id)
+//				{
+//					if (!empty($fc->next_due_dates))
+//					{
+//						foreach ($fc->next_due_dates as $next_due_date)
+//						{
+//							$fd = strtotime($next_due_date);
+//							if ($fd >= $sd && $fd < $ed)// && $ed >= time())						// while next due date still inside forecast interval
+//							{
+//								switch ($fc->type)
+//								{
+//									case 'DSLIP':
+//									case 'CREDIT':
+//										$data[$category->id] += $fc->amount;
+//										break;
+//									case 'DEBIT':
+//									case 'CHECK':
+//										$data[$category->id] -= $fc->amount;
+//										break;
+//								}
+//							}
+//						}
+//					}
+//				}
+//			}
+//		}
+//		return $data;
+//	}
+//
+//	private function _getOffsetDay()
+//	{
+//		$sd = date('z', strtotime($this->budget_start_date));
+//		$xx =  time();
+//		$yy = intval(strtotime($this->budget_start_date));
+//		$xx = ($xx - $yy) / (24 * 60 * 60);
+//		$xx = ceil($xx / $this->budget_interval);
+//		return ($xx * $this->budget_interval) + 1 - $sd;
+//	}
+//
 }
 
 // EOF
