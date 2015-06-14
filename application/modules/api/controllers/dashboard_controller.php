@@ -139,11 +139,10 @@ class dashboard_controller Extends rest_controller
 					$sql[] = "ORDER BY MONTH(T.transaction_date) ASC";
 					break;
 				default:
-//				throw new Exception("Invalid budget_mode setting");
 				$this->ajax->addError(new AjaxError("Invalid budget_mode setting (dashboard/load)"));
 				$this->ajax->output();
 			}
-//die(implode(' ', $sql));
+
 			$transactions = new transaction();
 			$transactions->queryAll(implode(' ', $sql));
 			if ($transactions->numRows())
@@ -163,9 +162,7 @@ class dashboard_controller Extends rest_controller
 				$balance->where('transaction.is_deleted', 0);
 				$balance->where("transaction.transaction_date < '" . $sd . "'");
 				$balance->row();
-//echo $balance->lastQuery();die;
-//print $balance;
-//die;
+
 				// get the starting bank balances
 				$accounts = new bank_account();
 				$accounts->select('SUM(balance) as balance');
@@ -175,6 +172,10 @@ class dashboard_controller Extends rest_controller
 				$running_total = $balance->balance_forward + $accounts->balance;
 
 				$data = array();
+				$data['balance_forward'] = $running_total;
+				$data['interval_total'] = 0;
+				$data['running_total'] = $running_total;
+
 				$output = array();
 				$date_offset = 0;
 
@@ -192,18 +193,19 @@ class dashboard_controller Extends rest_controller
 				{
 					while (strtotime($transaction->transaction_date) >= strtotime($sd . " +". ($date_offset + $this->budget_interval) . " " . $this->budget_interval_unit))
 					{
-						if ($date_offset == 0)
-						{
-							$data['balance_forward'] = $running_total;
-						}
 						$data['interval_beginning']	= date('c', strtotime($sd . " +" . $date_offset . " " . $this->budget_interval_unit));
 						$data['interval_ending']	= date('c', strtotime($sd . " 23:59:59 +" . ($date_offset + $this->budget_interval - 1) . " " . $this->budget_interval_unit));
 						if (empty($data['totals']))
 						{	// no totals for this interval
 							$data['totals'] = $noTotals;
 						}
+						$data['running_total'] = $running_total;
 						$output[] = $data;
+
 						$data = array();
+						$data['interval_total'] = 0;
+						$data['running_total'] = $running_total;
+
 						$date_offset += $this->budget_interval;
 					}
 
@@ -218,14 +220,13 @@ class dashboard_controller Extends rest_controller
 							} else {
 								$data['totals'][$index[1]] = $value;
 							}
+							$data['interval_total'] += $value;
+							$running_total += $value;
 						}
 					}
 				}
 
-				if ($date_offset == 0)
-				{
-					$data['balance_forward'] = $running_total;
-				}
+				$data['running_total'] = $running_total;
 				$data['interval_beginning']	= date('c', strtotime($sd . " +". $date_offset . " " . $this->budget_interval_unit));
 				$data['interval_ending']	= date('c', strtotime($sd . " 23:59:59 +" . ($date_offset + $this->budget_interval - 1) . " " . $this->budget_interval_unit));
 				$output[] = $data;
@@ -239,8 +240,34 @@ class dashboard_controller Extends rest_controller
 					$date_offset += $this->budget_interval;
 					$data['interval_beginning']	= date('c', strtotime($sd . " +". $date_offset . " " . $this->budget_interval_unit));
 					$data['interval_ending']	= date('c', strtotime($sd . " 23:59:59 +" . ($date_offset + $this->budget_interval - 1) . " " . $this->budget_interval_unit));
+					$data['interval_total']		= 0;
+					$data['running_total']		= $running_total;
 					$output[] = $data;
 				}
+				
+				$forecast = $this->_loadForecast($categories, $sd, $ed);
+				foreach ($output as $x => &$period)
+				{
+					$sd = strtotime($period['interval_beginning']);
+					$ed = strtotime($period['interval_ending']);
+					$now = time();
+					if (($now >= $sd && $now <= $ed) || $now < $ed)
+					{
+						// check to see what current values need to be from the forecast
+						foreach ($period['totals'] as $y => $intervalAmount)
+						{
+							if ($intervalAmount == 0 && $forecast[$x]['totals'][$y] != 0)
+							{	// if interval amount is zero and the forecast has a value then ... use the forecasted amount
+								$period['totals'][$y] = floatval($forecast[$x]['totals'][$y]);				// use the forcasted amount
+								$period['types'][$y] = '1';													// flag this as a forecast total
+								$period['interval_total'] += floatval($forecast[$x]['totals'][$y]);			// update the interval total
+								$running_total += floatval($forecast[$x]['totals'][$y]);					// update the running total
+							}
+						}
+						$period['running_total'] = $running_total;
+					}
+				}
+
 				$this->ajax->setData('result', $output);
 			} else {
 				$this->ajax->addError(new AjaxError("No transactions found"));
@@ -312,175 +339,108 @@ class dashboard_controller Extends rest_controller
 		return ($xx * $this->budget_interval);
 	}
 
-	public function load2()
+	public function _loadForecast($categories, $sd, $ed)
 	{
-		if ($_SERVER['REQUEST_METHOD'] != 'GET')
+		$output = array();
+
+		$forecast = new forecast();
+		$forecast->whereNotDeleted();
+		$forecast->result();
+		if ($forecast->numRows())
 		{
-//			$this->ajax->set_header("Forbidden", '403');
-			$this->ajax->addError(new AjaxError("403 - Forbidden (dashboard/load2)"));
-			$this->ajax->output();
-		}
-
-		$categories = new category();
-		$categories->whereNotDeleted();
-		$categories->orderBy('order');
-		$categories->result();
-		if ($categories->numRows())
-		{
-			$interval = $this->input->get('interval');
-			if (!is_numeric($interval))
+			// set the next due date(s) for the forecasted expenses
+			foreach ($forecast as $fc)
 			{
-				$this->ajax->addError("Invalid interval - dashboard/load2");
-				$this->ajax->output();
-			}
+				$next_due_dates = array();
 
-			$forecast = new forecast();
-			$forecast->whereNotDeleted();
-			$forecast->result();
-			if ($forecast->numRows())
-			{
-				// set the forecast start and end
-				switch ($this->budget_mode)
-				{
-					case 'weekly':
-						$offset = $this->_getOffsetDay();
-						$start_day = ($offset - ($this->budget_interval * ($this->budget_views - $interval)));		// -6 entries
-						$end_day = ($offset + ($this->budget_interval * ($this->budget_views + $interval)) - 1);	// +6 entries
-						$sd = date('Y-m-d', strtotime($this->budget_start_date . " +" . $start_day . " Days"));
-						$ed = date('Y-m-d', strtotime($this->budget_start_date . " +" . $end_day . " Days"));
-						break;
-					case 'bi-weekly':
-						$offset = $this->_getOffsetDay();
-						$start_day = ($offset - ($this->budget_interval * ($this->budget_views - $interval)));		// -6 entries
-						$end_day = ($offset + ($this->budget_interval * ($this->budget_views + $interval)) - 1);	// +6 entries
-						$sd = date('Y-m-d', strtotime($this->budget_start_date . " +" . $start_day . " Days"));
-						$ed = date('Y-m-d', strtotime($this->budget_start_date . " +" . $end_day . " Days"));
-						break;
-					case 'semi-monthy':
-						break;
-					case 'monthly':
-						$offset = date('n');
-						$start_month = ($offset - ($this->budget_interval * ($this->budget_views - $interval)));
-						$end_month = ($offset + ($this->budget_interval * ($this->budget_views + $interval)) - 1);
-						$sd = date('Y-m-d', strtotime($this->budget_start_date . " +" . $start_month . " Months"));
-						$ed = date('Y-m-d', strtotime($this->budget_start_date . " +" . $end_month . " Months"));
-						break;
-					default:
-//						throw new Exception("Invalid budget_mode setting");
-						$this->ajax->addError(new AjaxError("Invalid budget_mode setting (dashboard/load2)"));
-						$this->ajax->output();
-				}
-
-				// now calculate the balance brought forward
-				$balance = new transaction();
-				$balance->join('transaction_split', 'transaction_split.transaction_id = transaction.id AND transaction_split.is_deleted = 0', 'LEFT');
-				$balance->select("SUM(CASE WHEN transaction.type = 'CREDIT' AND transaction.category_id != 0 THEN transaction.amount ELSE 0 END) " .
-									" + SUM(CASE WHEN transaction.type = 'DSLIP' AND transaction.category_id != 0 THEN transaction.amount ELSE 0 END) " .
-									" - SUM(CASE WHEN transaction.type = 'DEBIT' AND transaction.category_id != 0 THEN transaction.amount ELSE 0 END) " .
-									" - SUM(CASE WHEN transaction.type = 'CHECK' AND transaction.category_id != 0 THEN transaction.amount ELSE 0 END) " .
-									" + SUM(CASE WHEN transaction.type = 'CREDIT' AND transaction.category_id = 0 THEN transaction_split.amount ELSE 0 END) " .
-									" + SUM(CASE WHEN transaction.type = 'DSLIP' AND transaction.category_id = 0 THEN transaction_split.amount ELSE 0 END) " .
-									" - SUM(CASE WHEN transaction.type = 'DEBIT' AND transaction.category_id = 0 THEN transaction_split.amount ELSE 0 END) " .
-									" - SUM(CASE WHEN transaction.type = 'CHECK' AND transaction.category_id = 0 THEN transaction_split.amount ELSE 0 END) " .
-									" AS balance_forward");
-				$balance->where('transaction.is_deleted', 0);
-				$balance->where("transaction.transaction_date < '" . $sd . "'");
-				$balance->row();
-
-				// get the starting bank balances
-				$accounts = new bank_account();
-				$accounts->select('SUM(balance) as balance');
-				$accounts->whereNotDeleted();
-				$accounts->row();
-
-				$running_total = $balance->balance_forward + $accounts->balance;
-				$this->ajax->setData('balance_forward', $running_total);
-
-				// set the next due date(s) for the forecasted expenses
-				foreach ($forecast as $fc)
-				{
-					$next_due_dates = array();
-
-					// initialize the offset
-					$offset = 0;
-					switch ($fc->every_unit)
-					{
-						case 'Days':
-							while (strtotime($sd . " +" . $offset . " Days") < strtotime($ed) && (!$fc->last_due_date || strtotime($sd . " +" . $offset . " Days") <= strtotime($fc->last_due_date)))
-							{
-								if (strtotime($sd . " +" . $offset . " Days") >= strtotime($fc->first_due_date))// && strtotime($sd . " +" . $offset . " Days") > time())
-								{
-									$next_due_dates[] = date('Y-m-d', strtotime($sd . " +" . $offset . " Days"));
-								}
-								$offset += $fc->every;
-							}
-							$fc->next_due_dates = $next_due_dates;
-							break;
-						case 'Weeks':
-							while (strtotime($sd . " +" . $offset . " Weeks") < strtotime($ed) && (!$fc->last_due_date || strtotime($sd . " +" . $offset . " Weeks") <= strtotime($fc->last_due_date)))
-							{
-								if (strtotime($sd . " +" . $offset . " Weeks") >= strtotime($fc->first_due_date))// && strtotime($sd . " +" . $offset . " Weeks") > time())
-								{
-									$next_due_dates[] = date('Y-m-d', strtotime($sd . " +" . $offset . " Weeks"));
-								}
-								$offset += $fc->every;;
-							}
-							$fc->next_due_dates = $next_due_dates;
-							break;
-						case 'Months':
-							$dt = explode('-', $sd);
-							$date = $dt[0] . '-' . $dt[1] . '-' . $fc->every_on;
-							while (strtotime($date . " +" . $offset . " Months") < strtotime($ed) && (!$fc->last_due_date || strtotime($sd . " +" . $offset . " Months") <= strtotime($fc->last_due_date)))
-							{
-								if (strtotime($date . " +" . $offset . " Months") >= strtotime($fc->first_due_date))// && strtotime($date . " +" . $offset . " Months") >= time())
-								{
-									$next_due_dates[] = date('Y-m-d', strtotime($date . " +" . $offset . " Months"));
-								}
-								$offset += $fc->every;
-							}
-							$fc->next_due_dates = $next_due_dates;
-							break;
-						case 'Years':
-							$dt = explode('-', $sd);
-							$date = $dt[0] . '-' . $fc->every_on;
-							while (strtotime($date . " +" . $offset . " Years") < strtotime($ed) && (!$fc->last_due_date || strtotime($sd . " +" . $offset . " Years") <= strtotime($fc->last_due_date)))
-							{
-								if (strtotime($date . " +" . $offset . " Years") >= strtotime($fc->first_due_date))// && strtotime($date . " +" . $offset . " Years") >= time())
-								{
-									$next_due_dates[] = date('Y-m-d', strtotime($date . " +" . $offset . " Years"));
-								}
-								$offset += $fc->every;
-							}
-							$fc->next_due_dates = $next_due_dates;
-							break;
-					}
-				}
-
-				// now sum the expenses for the forecast intervals
-				$output = array();
-				$xx = 0;
+				// initialize the offset
 				$offset = 0;
-				while (strtotime($sd . ' +' . $offset . ' ' . $this->budget_interval_unit) < strtotime($ed))
+				switch ($fc->every_unit)
 				{
-					$interval_beginning = date('Y-m-d', strtotime($sd . ' +' . $offset . ' ' . $this->budget_interval_unit));
-					$interval_ending = date('Y-m-d', strtotime($sd . ' +' . ($offset + $this->budget_interval - 1) . ' ' . $this->budget_interval_unit));
-
-					$output[$xx]['totals'] = $this->_getForecastByCategory($categories, $forecast, $interval_beginning);
-					$output[$xx]['interval_beginning'] = date('c', strtotime($interval_beginning));
-					$output[$xx]['interval_ending']	= date('c', strtotime($interval_ending . ' 23:59:59'));
-					$xx++;
-					$offset += $this->budget_interval;
+					case 'Days':
+						$diff = $this->_datediffInWeeks($fc->first_due_date, $sd);
+						$diff = intval(round($diff / $fc->every) * $fc->every);
+						$fdd = date('Y-m-d', strtotime($fc->first_due_date . " +" . $diff . " " . $fc->every_unit));		// set first due date
+						while (strtotime($fdd . " +" . $offset . " " . $fc->every_unit) < strtotime($ed) && (!$fc->last_due_date || strtotime($fdd . " +" . $offset . " Days") <= strtotime($fc->last_due_date)))
+						{
+							if (strtotime($fdd . " +" . $offset . " " . $fc->every_unit) >= strtotime($fc->first_due_date))
+							{
+								$next_due_dates[] = date('Y-m-d', strtotime($fdd . " +" . $offset . " " . $fc->every_unit));
+							}
+							$offset += $fc->every;
+						}
+						$fc->next_due_dates = $next_due_dates;
+						break;
+					case 'Weeks':
+						$diff = $this->_datediffInWeeks($fc->first_due_date, $sd);
+						$diff = intval(round($diff / $fc->every) * $fc->every);
+						$fdd = date('Y-m-d', strtotime($fc->first_due_date . " +" . $diff . " " . $fc->every_unit));		// set first due date
+						while (strtotime($fdd . " +" . $offset . " " . $fc->every_unit) < strtotime($ed) && (!$fc->last_due_date || strtotime($fdd . " +" . $offset . " " . $fc->every_unit) <= strtotime($fc->last_due_date)))
+						{
+							if (strtotime($fdd . " +" . $offset . " " . $fc->every_unit) >= strtotime($fc->first_due_date))
+							{
+								$next_due_dates[] = date('Y-m-d', strtotime($fdd . " +" . $offset . " " . $fc->every_unit));
+							}
+							$offset += $fc->every;
+						}
+						$fc->next_due_dates = $next_due_dates;
+						break;
+					case 'Months':
+						$dt = explode('-', $sd);
+						$fdd = $dt[0] . '-' . $dt[1] . '-' . $fc->every_on;
+						while (strtotime($fdd . " +" . $offset . " " . $fc->every_unit) < strtotime($ed) && (!$fc->last_due_date || strtotime($fdd . " +" . $offset . " " . $fc->every_unit) <= strtotime($fc->last_due_date)))
+						{
+							if (strtotime($fdd . " +" . $offset . " " . $fc->every_unit) >= strtotime($fc->first_due_date))
+							{
+								$next_due_dates[] = date('Y-m-d', strtotime($fdd . " +" . $offset . " " . $fc->every_unit));
+							}
+							$offset += $fc->every;
+						}
+						$fc->next_due_dates = $next_due_dates;
+						break;
+					case 'Years':
+						$dt = explode('-', $sd);
+						$fdd = $dt[0] . '-' . $fc->every_on;
+						while (strtotime($fdd . " +" . $offset . " " . $fc->every_unit) < strtotime($ed) && (!$fc->last_due_date || strtotime($fdd . " +" . $offset . " " . $fc->every_unit) <= strtotime($fc->last_due_date)))
+						{
+							if (strtotime($fdd . " +" . $offset . " " . $fc->every_unit) >= strtotime($fc->first_due_date))
+							{
+								$next_due_dates[] = date('Y-m-d', strtotime($fdd . " +" . $offset . " " . $fc->every_unit));
+							}
+							$offset += $fc->every;
+						}
+						$fc->next_due_dates = $next_due_dates;
+						break;
 				}
-				$this->ajax->setData('result', $output);
-			} else {
-				$this->ajax->addError("No Forecast found");
 			}
-		} else {
-			$this->ajax->addError("No categories found");
+
+			// now sum the expenses for the forecast intervals
+			$xx = 0;
+			$offset = 0;
+			while (strtotime($sd . ' +' . $offset . ' ' . $this->budget_interval_unit) < strtotime($ed))
+			{
+				$interval_beginning = date('Y-m-d', strtotime($sd . ' +' . $offset . ' ' . $this->budget_interval_unit));
+				$interval_ending = date('Y-m-d', strtotime($sd . ' +' . ($offset + $this->budget_interval - 1) . ' ' . $this->budget_interval_unit));
+
+				$output[$xx]['totals'] = $this->_getForecastByCategory($categories, $forecast, $interval_beginning);
+				$output[$xx]['interval_beginning'] = date('c', strtotime($interval_beginning));
+				$output[$xx]['interval_ending']	= date('c', strtotime($interval_ending . ' 23:59:59'));
+				$xx++;
+				$offset += $this->budget_interval;
+			}
 		}
+		return $output;
+	}
 
-		$this->ajax->output();
-
+	private function _datediffInWeeks($date1, $date2)
+	{
+		if($date1 > $date2)
+		{
+			return $this->_datediffInWeeks($date2, $date1);
+		}
+		$first = new DateTime($date1);
+		$second = new DateTime($date2);
+		return floor($first->diff($second)->days/7);
 	}
 
 	private function _getForecastByCategory($categories, $forecast, $start_date)
@@ -520,16 +480,6 @@ class dashboard_controller Extends rest_controller
 			}
 		}
 		return $data;
-	}
-
-	private function _getOffsetDay()
-	{
-		$sd = date('z', strtotime($this->budget_start_date));
-		$xx =  time();
-		$yy = intval(strtotime($this->budget_start_date));
-		$xx = ($xx - $yy) / (24 * 60 * 60);
-		$xx = ceil($xx / $this->budget_interval);
-		return ($xx * $this->budget_interval) + 1 - $sd;
 	}
 
 }
