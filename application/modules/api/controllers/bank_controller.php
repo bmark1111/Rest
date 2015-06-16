@@ -30,9 +30,23 @@ class bank_controller Extends rest_controller
 			$this->ajax->output();
 		}
 
+		$params = $this->input->get();
+
+		$name				= (!empty($params['name'])) ? $params['name']: FALSE;
+		$pagination_amount	= (!empty($params['pagination_amount'])) ? $params['pagination_amount']: 20;
+		$pagination_start	= (!empty($params['pagination_start'])) ? $params['pagination_start']: 0;
+		$sort				= (!empty($params['sort'])) ? $params['sort']: 'name';
+		$sort_dir			= (!empty($params['sort_dir']) && $params['sort_dir'] == 'DESC') ? 'DESC': 'ASC';
+
 		$banks = new bank();
+		if ($name)
+		{
+			$banks->like('name', $name);
+		}
+		$banks->select('SQL_CALC_FOUND_ROWS *', FALSE);
 		$banks->whereNotDeleted();
-		$banks->orderBy('name');
+		$banks->limit($pagination_amount, $pagination_start);
+		$banks->orderBy($sort, $sort_dir);
 		$banks->result();
 		if ($banks->numRows())
 		{

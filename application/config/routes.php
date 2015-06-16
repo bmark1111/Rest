@@ -71,8 +71,13 @@ $route['data/bank/delete']						= "api/bank/delete";				// GET - delete bank
 $route['data/bank/edit']						= "api/bank/edit";					// GET - edit bank
 $route['data/bank/save']						= "api/bank/save";					// POST - save bank
 
-$route['data/setting/load']						= "api/setting/load";				// GET - load settings
+$route['data/category/load']					= "api/category/load";				// GET - get all categories
+$route['data/category/delete']					= "api/category/delete";			// GET - delete category
+$route['data/category/edit']					= "api/category/edit";				// GET - edit category
+$route['data/category/save']					= "api/category/save";				// POST - save category
 $route['data/category']							= "api/category";					// GET - get categories
+
+$route['data/setting/load']						= "api/setting/load";				// GET - load settings
 
 $route['upload/(:num)/(:num)']					= "upload/index/$1/$2";				// Upload transactions
 
