@@ -104,8 +104,8 @@ class dashboard_controller Extends rest_controller
 			{
 				case 'weekly':
 					$offset = $this->_getEndDay();
-					$start_day = ($offset - ($this->budget_interval * ($this->budget_views - $interval)));		// -6 entries
-					$end_day = ($offset + ($this->budget_interval * ($this->budget_views + $interval)));		// +6 entries
+					$start_day = ($offset - ($this->budget_interval * ($this->budget_views - $interval)));		// - 'budget_views' entries and adjust for interval
+					$end_day = ($offset + ($this->budget_interval * ($this->budget_views + $interval)));		// + 'budget_views' entries and adjust for interval
 					$sd = date('Y-m-d', strtotime($this->budget_start_date . " +" . $start_day . " Days"));
 					$ed = date('Y-m-d', strtotime($this->budget_start_date . " +" . $end_day . " Days"));
 
@@ -115,8 +115,8 @@ class dashboard_controller Extends rest_controller
 					break;
 				case 'bi-weekly':
 					$offset = $this->_getEndDay();
-					$start_day = ($offset - ($this->budget_interval * ($this->budget_views - $interval)));		// -6 entries
-					$end_day = ($offset + ($this->budget_interval * ($this->budget_views + $interval)));		// +6 entries
+					$start_day = ($offset - ($this->budget_interval * ($this->budget_views - $interval)));		// - 'budget_views' entries and adjust for interval
+					$end_day = ($offset + ($this->budget_interval * ($this->budget_views + $interval)));		// + 'budget_views' entries and adjust for interval
 					$sd = date('Y-m-d', strtotime($this->budget_start_date . " +" . $start_day . " Days"));
 					$ed = date('Y-m-d', strtotime($this->budget_start_date . " +" . $end_day . " Days"));
 
@@ -125,28 +125,47 @@ class dashboard_controller Extends rest_controller
 					$sql[] = "ORDER BY DAYOFYEAR(T.transaction_date) ASC";
 					break;
 				case 'semi-monthy':
-					// TODO:
+					// TODO: divide the month:-
+					//		1st through the 15th and 16th through the end of month
+
+					$sql[] = "WHERE T.transaction_date >= '" . $sd . "' AND T.transaction_date < '" . $ed . "' AND T.is_deleted = 0";
+					$sql[] = "GROUP BY DAYOFYEAR(T.transaction_date)";
+					$sql[] = "ORDER BY DAYOFYEAR(T.transaction_date) ASC";
 					break;
 				case 'monthly':
-					$offset = date('n');
-					$start_month = ($offset - ($this->budget_interval * ($this->budget_views - $interval)));
-					$end_month = ($offset + ($this->budget_interval * ($this->budget_views + $interval)));
-					$sd = date('Y-m-d', strtotime($this->budget_start_date . " +" . $start_month . " Months"));
-					$ed = date('Y-m-d', strtotime($this->budget_start_date . " +" . $end_month . " Months"));
+					$offset = date('n');			// get the current month
+					$start_month = ($offset - ($this->budget_interval * ($this->budget_views - $interval)));	// go back 'budget views' and adjust for interval
+					$end_month = ($offset + ($this->budget_interval * ($this->budget_views + $interval)));		// go forward 'budget views' and adjust for interval
+//echo $start_month."\n";
+//echo $end_month."\n";
+					$start = new DateTime($this->budget_start_date);
+					$start->add(new DateInterval("P" . $start_month . "M"));
+//var_dump($start);
+					$end = new DateTime($this->budget_start_date);
+					$end->add(new DateInterval("P" . $end_month . "M"));
+//var_dump($end);
+					$sd = $start->format('Y-m-d');
+					$ed = $end->format('Y-m-d');
+//die("sd = $sd /// ed = $ed");
+//					$sd = date('Y-m-d', strtotime($this->budget_start_date . " +" . $start_month . " Months"));
+//					$ed = date('Y-m-d', strtotime($this->budget_start_date . " +" . $end_month . " Months"));
 
 					$sql[] = "WHERE T.transaction_date >= '" . $sd . "' AND T.transaction_date < '" . $ed . "' AND T.is_deleted = 0";
 					$sql[] = "GROUP BY MONTH(T.transaction_date)";
 					$sql[] = "ORDER BY MONTH(T.transaction_date) ASC";
 					break;
 				default:
-				$this->ajax->addError(new AjaxError("Invalid budget_mode setting (dashboard/load)"));
-				$this->ajax->output();
+					$this->ajax->addError(new AjaxError("Invalid budget_mode setting (dashboard/load)"));
+					$this->ajax->output();
 			}
 
 			$transactions = new transaction();
 			$transactions->queryAll(implode(' ', $sql));
 			if ($transactions->numRows())
 			{
+				$forecast = $this->_loadForecast($categories, $sd, $ed);
+				// TODO: include forecast in the balance forward if necessary
+
 				// now calculate the balance brought forward
 				$balance = new transaction();
 				$balance->join('transaction_split', 'transaction_split.transaction_id = transaction.id AND transaction_split.is_deleted = 0', 'LEFT');
@@ -189,12 +208,25 @@ class dashboard_controller Extends rest_controller
 						$noTotals[$index[1]] = "0.00";
 					}
 				}
+//echo "sd = $sd /// ed = $ed";
+				$isd = $sd;																					// set the first interval start date
+				$ied = $this->_getNextDate($isd, $this->budget_interval, $this->budget_interval_unit);
+				$ied = $this->_getNextDate($ied, -1, 'days');												// set the first interval end date
+				// now sort transactions into intervals
 				foreach ($transactions as $transaction)
 				{
-					while (strtotime($transaction->transaction_date) >= strtotime($sd . " +". ($date_offset + $this->budget_interval) . " " . $this->budget_interval_unit))
+//echo "\n-----------------------------\n";
+//echo $transaction->transaction_date."\n";
+//echo "interval start date  = ".$isd."\n";
+//echo "interval end date  = ".$ied."\n";
+//die;
+					while (strtotime($transaction->transaction_date) > strtotime($ied))
+//					while (strtotime($transaction->transaction_date) >= strtotime($sd . " +". ($date_offset + $this->budget_interval) . " " . $this->budget_interval_unit))
 					{
-						$data['interval_beginning']	= date('c', strtotime($sd . " +" . $date_offset . " " . $this->budget_interval_unit));
-						$data['interval_ending']	= date('c', strtotime($sd . " 23:59:59 +" . ($date_offset + $this->budget_interval - 1) . " " . $this->budget_interval_unit));
+//						$data['interval_beginning']	= date('c', strtotime($sd . " +" . $date_offset . " " . $this->budget_interval_unit));
+//						$data['interval_ending']	= date('c', strtotime($sd . " 23:59:59 +" . ($date_offset + $this->budget_interval - 1) . " " . $this->budget_interval_unit));
+						$data['interval_beginning']	= date('c', strtotime($isd));
+						$data['interval_ending']	= date('c', strtotime($ied . " 23:59:59"));
 						if (empty($data['totals']))
 						{	// no totals for this interval
 							$data['totals'] = $noTotals;
@@ -206,7 +238,16 @@ class dashboard_controller Extends rest_controller
 						$data['interval_total'] = 0;
 						$data['running_total'] = $running_total;
 
-						$date_offset += $this->budget_interval;
+//						$date_offset += $this->budget_interval;
+//						$interval_date->add(new DateInterval("P" . ($date_offset + $this->budget_interval) . "M"));
+//						$id = $interval_date->format('Y-m-d');
+						$isd = $this->_getNextDate($isd, $this->budget_interval, $this->budget_interval_unit);		// set the interval start date
+						$ied = $this->_getNextDate($isd, $this->budget_interval, $this->budget_interval_unit);
+						$ied = $this->_getNextDate($ied, -1, 'days');												// set the interval end date
+//						$ied = $this->_getNextDate($ied, $this->budget_interval, $this->budget_interval_unit);
+//echo "=====================\n";
+//echo "interval start date  = ".$isd."\n";
+//echo "interval end date  = ".$ied."\n";
 					}
 
 					foreach ($transaction as $label => $value)
@@ -227,8 +268,10 @@ class dashboard_controller Extends rest_controller
 				}
 
 				$data['running_total'] = $running_total;
-				$data['interval_beginning']	= date('c', strtotime($sd . " +". $date_offset . " " . $this->budget_interval_unit));
-				$data['interval_ending']	= date('c', strtotime($sd . " 23:59:59 +" . ($date_offset + $this->budget_interval - 1) . " " . $this->budget_interval_unit));
+//				$data['interval_beginning']	= date('c', strtotime($sd . " +". $date_offset . " " . $this->budget_interval_unit));
+//				$data['interval_ending']	= date('c', strtotime($sd . " 23:59:59 +" . ($date_offset + $this->budget_interval - 1) . " " . $this->budget_interval_unit));
+				$data['interval_beginning']	= date('c', strtotime($isd));
+				$data['interval_ending']	= date('c', strtotime($ied . " 23:59:59"));
 				$output[] = $data;
 
 				while (count($output) < ($this->budget_views * 2))		// show 12 intervals
@@ -237,15 +280,20 @@ class dashboard_controller Extends rest_controller
 					{
 						$total = 0;
 					}
-					$date_offset += $this->budget_interval;
-					$data['interval_beginning']	= date('c', strtotime($sd . " +". $date_offset . " " . $this->budget_interval_unit));
-					$data['interval_ending']	= date('c', strtotime($sd . " 23:59:59 +" . ($date_offset + $this->budget_interval - 1) . " " . $this->budget_interval_unit));
+//					$date_offset += $this->budget_interval;
+//					$data['interval_beginning']	= date('c', strtotime($sd . " +". $date_offset . " " . $this->budget_interval_unit));
+//					$data['interval_ending']	= date('c', strtotime($sd . " 23:59:59 +" . ($date_offset + $this->budget_interval - 1) . " " . $this->budget_interval_unit));
+					$isd = $this->_getNextDate($isd, $this->budget_interval, $this->budget_interval_unit);		// set the interval start date
+					$ied = $this->_getNextDate($isd, $this->budget_interval, $this->budget_interval_unit);
+					$ied = $this->_getNextDate($ied, -1, 'days');												// set the interval end date
+					$data['interval_beginning']	= date('c', strtotime($isd));
+					$data['interval_ending']	= date('c', strtotime($ied . " 23:59:59"));
 					$data['interval_total']		= 0;
 					$data['running_total']		= $running_total;
 					$output[] = $data;
 				}
-				
-				$forecast = $this->_loadForecast($categories, $sd, $ed);
+
+//				$forecast = $this->_loadForecast($categories, $sd, $ed);
 				foreach ($output as $x => &$period)
 				{
 					$sd = strtotime($period['interval_beginning']);
@@ -279,6 +327,22 @@ class dashboard_controller Extends rest_controller
 		$this->ajax->output();
 	}
 
+	private function _getNextDate($myDateTimeISO, $addThese, $unit)
+	{
+		$myDateTime = new DateTime($myDateTimeISO);
+		$myDayOfMonth = date_format($myDateTime, 'j');
+		date_modify($myDateTime, "+" . $addThese . " " . $unit);
+
+		//Find out if the day-of-month has dropped
+		$myNewDayOfMonth = date_format($myDateTime, 'j');
+		if ($myDayOfMonth > 28 && $myNewDayOfMonth < 4)
+		{
+			//If so, fix by going back the number of days that have spilled over
+			date_modify($myDateTime, "-" . $myNewDayOfMonth . " " . $unit);
+		}
+		return date_format($myDateTime, "Y-m-d");
+	}
+
 	public function these()
 	{
 		if ($_SERVER['REQUEST_METHOD'] != 'GET')
@@ -288,15 +352,23 @@ class dashboard_controller Extends rest_controller
 			$this->ajax->output();
 		}
 
+		$interval_beginning	= $this->input->get('interval_beginning');
+		if (!$interval_beginning || !strtotime($interval_beginning))
+		{
+			$this->ajax->addError(new AjaxError("Invalid interval_beginning - dashboard/these"));
+			$this->ajax->output();
+		}
+		$interval_beginning = explode('T', $interval_beginning);
+		$sd = date('Y-m-d', strtotime($interval_beginning[0]));
+
 		$interval_ending	= $this->input->get('interval_ending');
 		if (!$interval_ending || !strtotime($interval_ending))
 		{
-			$this->ajax->addError(new AjaxError("Invalid week ending - dashboard/these"));
+			$this->ajax->addError(new AjaxError("Invalid interval ending - dashboard/these"));
 			$this->ajax->output();
 		}
 		$interval_ending = explode('T', $interval_ending);
 		$ed = date('Y-m-d', strtotime($interval_ending[0]));
-		$sd = date('Y-m-d', strtotime($ed . ' -' . ($this->budget_interval - 1) . ' ' . $this->budget_interval_unit));
 
 		$category_id	= $this->input->get('category_id');
 		if ($category_id == 0 || !is_numeric($category_id))
@@ -319,7 +391,6 @@ class dashboard_controller Extends rest_controller
 		$transactions->where('transaction.transaction_date <= ', $ed);
 		$transactions->orderBy('transaction.transaction_date', 'DESC');
 		$transactions->result();
-		
 		if ($transactions->numRows())
 		{
 			$this->ajax->setData('result', $transactions);
@@ -331,7 +402,6 @@ class dashboard_controller Extends rest_controller
 
 	private function _getEndDay()
 	{
-		$ed = date('z');
 		$xx =  time();
 		$yy = intval(strtotime($this->budget_start_date));
 		$xx = ($xx - $yy) / (24 * 60 * 60);
