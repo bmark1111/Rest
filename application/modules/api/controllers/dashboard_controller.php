@@ -157,8 +157,8 @@ class dashboard_controller Extends rest_controller
 
 			$transactions = new transaction();
 			$transactions->queryAll(implode(' ', $sql));
-			if ($transactions->numRows())
-			{
+//			if ($transactions->numRows())
+//			{
 				$forecast = $this->_loadForecast($categories, $sd, $ed);
 				// TODO: include forecast in the balance forward if necessary
 
@@ -298,9 +298,9 @@ class dashboard_controller Extends rest_controller
 				}
 
 				$this->ajax->setData('result', $output);
-			} else {
-				$this->ajax->addError(new AjaxError("No transactions found"));
-			}
+//			} else {
+//				$this->ajax->addError(new AjaxError("No transactions found"));
+//			}
 		} else {
 			$this->ajax->addError(new AjaxError("No categories found"));
 		}

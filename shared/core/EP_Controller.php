@@ -115,9 +115,6 @@ class EP_Controller extends MX_Controller
 		// load any remaining libraries that are necessary
 		$this->loadLibraries();
 
-//$this->ajax->set_header("You are not authorzed xxxxxxxxx", '401');
-//exit;
-
 		if (APPLICATION == 'REST')
 		{
 			$uri = explode('/', uri_string());
@@ -142,7 +139,7 @@ class EP_Controller extends MX_Controller
 								// make sure that only one result is found
 								if ($oQuery->num_rows() != 1)
 								{
-									$this->ajax->set_header("You are not authorzed", '401');
+									$this->ajax->set_header("You are not authorzed - 001", '401');
 									exit;
 								}
 								$uSession = $oQuery->row();
@@ -177,7 +174,7 @@ class EP_Controller extends MX_Controller
 					default:
 						if($this->input->is_ajax_request())
 						{
-							$this->ajax->set_header("You are not authorzed", '401');
+							$this->ajax->set_header("You are not authorzed - 002", '401');
 							exit;
 						} else {
 							$this->ajax->set_header("Not Found", '404');
@@ -188,7 +185,7 @@ class EP_Controller extends MX_Controller
 			} else {
 				if($this->input->is_ajax_request())
 				{
-					$this->ajax->set_header("You are not authorzed", '401');
+					$this->ajax->set_header("You are not authorzed - 003", '401');
 					exit;
 				} else {
 					$this->ajax->set_header("Not Found", '404');
