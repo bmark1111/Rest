@@ -120,6 +120,7 @@ class transaction_controller Extends rest_controller
 		$this->form_validation->set_rules('transaction_date', 'Date', 'required');
 		$this->form_validation->set_rules('description', 'Description', 'required|max_length[150]');
 		$this->form_validation->set_rules('type', 'Type', 'required|alpha');
+		$this->form_validation->set_rules('category_id', 'Category', 'is_validCategory');
 		$this->form_validation->set_rules('amount', 'Amount', 'required');
 
 		// validate split data
@@ -130,6 +131,7 @@ class transaction_controller Extends rest_controller
 				if (empty($split['is_deleted']) || $split['is_deleted'] != 1)
 				{
 					$this->form_validation->set_rules('splits[' . $idx . '][amount]', 'Split Amount', 'required');
+					$this->form_validation->set_rules('splits[' . $idx . '][type]', 'Split Type', 'required|alpha');
 					$this->form_validation->set_rules('splits[' . $idx . '][category_id]', 'Split Category', 'required|integer');
 				}
 			}
@@ -147,6 +149,8 @@ class transaction_controller Extends rest_controller
 		if (empty($_POST['splits']))
 		{	// ignore category if splits are present
 			$transaction->category_id	= $_POST['category_id'];
+		} else {
+			$transaction->category_id	= NULL;
 		}
 		$transaction->check_num			= $_POST['check_num'];
 		$transaction->amount			= $_POST['amount'];
@@ -164,6 +168,7 @@ class transaction_controller Extends rest_controller
 					$transaction_split->description		= $split['description'];
 					$transaction_split->amount			= $split['amount'];
 					$transaction_split->transaction_id	= $transaction->id;
+					$transaction_split->type			= $split['type'];
 					$transaction_split->category_id		= $split['category_id'];
 					$transaction_split->notes			= $split['notes'];
 					$transaction_split->save();
@@ -174,6 +179,12 @@ class transaction_controller Extends rest_controller
 		}
 
 		$this->ajax->output();
+	}
+
+	public function is_validCategory()
+	{
+		// TODO: if no splits then category is required otherwise MUST be NULL
+		return TRUE;
 	}
 
 	public function delete()

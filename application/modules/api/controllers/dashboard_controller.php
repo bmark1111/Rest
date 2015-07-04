@@ -87,10 +87,10 @@ class dashboard_controller Extends rest_controller
 							" + SUM(CASE WHEN T.category_id = " . $category->id . " AND T.type = 'DSLIP' THEN T.amount ELSE 0 END)" .
 							" - SUM(CASE WHEN T.category_id = " . $category->id . " AND T.type = 'CHECK' THEN T.amount ELSE 0 END)" .
 							" - SUM(CASE WHEN T.category_id = " . $category->id . " AND T.type = 'DEBIT' THEN T.amount ELSE 0 END) " .
-							" + SUM(CASE WHEN TS.category_id = " . $category->id . " AND T.type = 'CREDIT' THEN TS.amount ELSE 0 END)" .
-							" + SUM(CASE WHEN TS.category_id = " . $category->id . " AND T.type = 'DSLIP' THEN TS.amount ELSE 0 END)" .
-							" - SUM(CASE WHEN TS.category_id = " . $category->id . " AND T.type = 'CHECK' THEN TS.amount ELSE 0 END)" .
-							" - SUM(CASE WHEN TS.category_id = " . $category->id . " AND T.type = 'DEBIT' THEN TS.amount ELSE 0 END) " .
+							" + SUM(CASE WHEN TS.category_id = " . $category->id . " AND TS.type = 'CREDIT' THEN TS.amount ELSE 0 END)" .
+							" + SUM(CASE WHEN TS.category_id = " . $category->id . " AND TS.type = 'DSLIP' THEN TS.amount ELSE 0 END)" .
+							" - SUM(CASE WHEN TS.category_id = " . $category->id . " AND TS.type = 'CHECK' THEN TS.amount ELSE 0 END)" .
+							" - SUM(CASE WHEN TS.category_id = " . $category->id . " AND TS.type = 'DEBIT' THEN TS.amount ELSE 0 END) " .
 							"AS total_" . $category->id;
 			}
 
@@ -168,10 +168,10 @@ class dashboard_controller Extends rest_controller
 								" + SUM(CASE WHEN transaction.type = 'DSLIP' AND transaction.category_id != 0 THEN transaction.amount ELSE 0 END) " .
 								" - SUM(CASE WHEN transaction.type = 'DEBIT' AND transaction.category_id != 0 THEN transaction.amount ELSE 0 END) " .
 								" - SUM(CASE WHEN transaction.type = 'CHECK' AND transaction.category_id != 0 THEN transaction.amount ELSE 0 END) " .
-								" + SUM(CASE WHEN transaction.type = 'CREDIT' AND transaction.category_id = 0 THEN transaction_split.amount ELSE 0 END) " .
-								" + SUM(CASE WHEN transaction.type = 'DSLIP' AND transaction.category_id = 0 THEN transaction_split.amount ELSE 0 END) " .
-								" - SUM(CASE WHEN transaction.type = 'DEBIT' AND transaction.category_id = 0 THEN transaction_split.amount ELSE 0 END) " .
-								" - SUM(CASE WHEN transaction.type = 'CHECK' AND transaction.category_id = 0 THEN transaction_split.amount ELSE 0 END) " .
+								" + SUM(CASE WHEN transaction_split.type = 'CREDIT' AND transaction.category_id = 0 THEN transaction_split.amount ELSE 0 END) " .
+								" + SUM(CASE WHEN transaction_split.type = 'DSLIP' AND transaction.category_id = 0 THEN transaction_split.amount ELSE 0 END) " .
+								" - SUM(CASE WHEN transaction_split.type = 'DEBIT' AND transaction.category_id = 0 THEN transaction_split.amount ELSE 0 END) " .
+								" - SUM(CASE WHEN transaction_split.type = 'CHECK' AND transaction.category_id = 0 THEN transaction_split.amount ELSE 0 END) " .
 								" AS balance_forward");
 			$balance->where('transaction.is_deleted', 0);
 			$balance->where("transaction.transaction_date < '" . $sd . "'");
@@ -362,7 +362,7 @@ class dashboard_controller Extends rest_controller
 						AND T.category_id = " . $category_id . " AND T.category_id IS NOT NULL
 						AND T.`transaction_date` >=  '" . $sd . "'
 						AND T.`transaction_date` <=  '" . $ed . "')
-					UNION
+			UNION
 				(SELECT T.transaction_date, T.type, T.description, TS.notes, TS.amount
 				FROM transaction T
 				LEFT JOIN transaction_split TS ON T.id = TS.transaction_id
@@ -373,22 +373,12 @@ class dashboard_controller Extends rest_controller
 						AND T.`transaction_date` <=  '" . $ed . "')
 				ORDER BY transaction_date DESC";
 		$transactions->queryAll($sql);
-//		$transactions->select('transaction.transaction_date, transaction.type, transaction.description, transaction.notes, COALESCE(transaction.amount, transaction_split.amount) AS amount, COALESCE(C1.name, C2.name) AS category_name', FALSE);
-//		$transactions->join('transaction_split', 'transaction_split.transaction_id = transaction.id AND transaction_split.is_deleted = 0 AND transaction_split.category_id = ' . $category_id, 'LEFT');
-//		$transactions->join('category C1', 'C1.id = transaction.category_id', 'LEFT');
-//		$transactions->join('category C2', 'C2.id = transaction_split.category_id', 'LEFT');
-//		$transactions->where('transaction.is_deleted', 0);
-//		$transactions->groupStart();
-//		$transactions->orWhere('transaction.category_id', $category_id);
-//		$transactions->orWhere('transaction_split.category_id', $category_id);
-//		$transactions->groupEnd();
-//		$transactions->where('transaction.transaction_date >= ', $sd);
-//		$transactions->where('transaction.transaction_date <= ', $ed);
-//		$transactions->orderBy('transaction.transaction_date', 'DESC');
-//		$transactions->result();
-//echo $transactions->lastQuery();die;
 		if ($transactions->numRows())
 		{
+			foreach ($transactions as $transaction)
+			{
+				$transaction->amount = ($transaction->type == 'CHECK' || $transaction->type == 'DEBIT') ? -$transaction->amount: $transaction->amount;
+			}
 			$this->ajax->setData('result', $transactions);
 		} else {
 			$this->ajax->addError(new AjaxError("Error - No transactions found"));
