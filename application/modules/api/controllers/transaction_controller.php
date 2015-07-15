@@ -8,11 +8,11 @@ require_once ('rest_controller.php');
 class transaction_controller Extends rest_controller
 {
 	protected $debug = TRUE;
-	private $budget_mode = FALSE;
-	private $budget_start_date = FALSE;
-	private $budget_interval = FALSE;
-	private $budget_interval_unit = FALSE;
-	private $budget_views = 6;
+//	private $budget_mode = FALSE;
+//	private $budget_start_date = FALSE;
+//	private $budget_interval = FALSE;
+//	private $budget_interval_unit = FALSE;
+//	private $budget_views = 6;
 
 	public function __construct()
 	{
@@ -117,11 +117,12 @@ class transaction_controller Extends rest_controller
 		$_POST = json_decode($input, TRUE);
 
 		// VALIDATION
+		$this->form_validation->set_rules('bank_account_id', 'Bank Account', 'required');
 		$this->form_validation->set_rules('transaction_date', 'Date', 'required');
 		$this->form_validation->set_rules('description', 'Description', 'required|max_length[150]');
 		$this->form_validation->set_rules('type', 'Type', 'required|alpha');
-		$this->form_validation->set_rules('category_id', 'Category', 'is_validCategory');
-		$this->form_validation->set_rules('amount', 'Amount', 'required');
+		$this->form_validation->set_rules('category_id', 'Category', 'callback_isValidCategory');
+		$this->form_validation->set_rules('amount', 'Amount', 'callback_isValidAmount');
 
 		// validate split data
 		if (!empty($_POST['splits']))
@@ -181,9 +182,73 @@ class transaction_controller Extends rest_controller
 		$this->ajax->output();
 	}
 
-	public function is_validCategory()
+	/*
+	 * Checks is splits are entered, if not main category is a required field
+	 */
+	public function isValidCategory()
 	{
-		// TODO: if no splits then category is required otherwise MUST be NULL
+		$input = file_get_contents('php://input');
+		$_POST = json_decode($input, TRUE);
+
+		// if no splits then category is required otherwise MUST be NULL (will be ignored in Save)
+		if (empty($_POST['splits']) && empty($_POST['category_id']))
+		{
+			$this->form_validation->set_message('isValidCategory', 'The Category Field is Required');
+			return FALSE;
+		}
+		return TRUE;
+	}
+
+	/*
+	 * Checks if splits are entered, if not main amount is required
+	 *								if it is then checks that split amounts equal transaction amount
+	 */
+	public function isValidAmount()
+	{
+		$input = file_get_contents('php://input');
+		$_POST = json_decode($input, TRUE);
+
+		if (!empty($_POST['splits']))
+		{
+			$split_total = floatval($_POST['amount']);
+			foreach ($_POST['splits'] as $split)
+			{
+				if (empty($split['is_deleted']) || $split['is_deleted'] != '1')
+				{
+					switch ($split['type'])
+					{
+						case 'DEBIT':
+						case 'CHECK':
+							if ($_POST['type'] == 'DEBIT' || $_POST['type'] == 'CHECK')
+							{
+								$split_total -= floatval($split['amount']);
+							} else {
+								$split_total += floatval($split['amount']);
+							}
+							break;
+						case 'CREDIT':
+						case 'DSLIP':
+							if ($_POST['type'] == 'CREDIT' || $_POST['type'] == 'DSLIP')
+							{
+								$split_total -= floatval($split['amount']);
+							} else {
+								$split_total += floatval($split['amount']);
+							}
+							break;
+					}
+				}
+			}
+			if ($split_total != 0)
+			{
+				$this->form_validation->set_message('isValidAmount', 'The Split amounts do not match the transaction amount');
+				return FALSE;
+			}
+		}
+		elseif (empty($_POST['amount']) || $_POST['amount'] == 0)
+		{
+			$this->form_validation->set_message('isValidAmount', 'The Amount Field is Required');
+			return FALSE;
+		}
 		return TRUE;
 	}
 
