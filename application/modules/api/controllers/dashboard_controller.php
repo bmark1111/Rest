@@ -157,31 +157,31 @@ class dashboard_controller Extends rest_controller
 			$transactions->queryAll(implode(' ', $sql));
 
 			$forecast = $this->_loadForecast($categories, $sd, $ed);
-			// TODO: include forecast in the balance forward if necessary
 
-			// now calculate the balance brought forward
-			$balance = new transaction();
-			$balance->join('transaction_split', 'transaction_split.transaction_id = transaction.id AND transaction_split.is_deleted = 0', 'LEFT');
-			$balance->select("SUM(CASE WHEN transaction.type = 'CREDIT' AND transaction.category_id != 0 THEN transaction.amount ELSE 0 END) " .
-								" + SUM(CASE WHEN transaction.type = 'DSLIP' AND transaction.category_id != 0 THEN transaction.amount ELSE 0 END) " .
-								" - SUM(CASE WHEN transaction.type = 'DEBIT' AND transaction.category_id != 0 THEN transaction.amount ELSE 0 END) " .
-								" - SUM(CASE WHEN transaction.type = 'CHECK' AND transaction.category_id != 0 THEN transaction.amount ELSE 0 END) " .
-								" + SUM(CASE WHEN transaction_split.type = 'CREDIT' AND transaction.category_id = 0 THEN transaction_split.amount ELSE 0 END) " .
-								" + SUM(CASE WHEN transaction_split.type = 'DSLIP' AND transaction.category_id = 0 THEN transaction_split.amount ELSE 0 END) " .
-								" - SUM(CASE WHEN transaction_split.type = 'DEBIT' AND transaction.category_id = 0 THEN transaction_split.amount ELSE 0 END) " .
-								" - SUM(CASE WHEN transaction_split.type = 'CHECK' AND transaction.category_id = 0 THEN transaction_split.amount ELSE 0 END) " .
-								" AS balance_forward");
-			$balance->where('transaction.is_deleted', 0);
-			$balance->where("transaction.transaction_date < '" . $sd . "'");
-			$balance->row();
-
-			// get the starting bank balances
-			$accounts = new bank_account();
-			$accounts->select('SUM(balance) as balance');
-			$accounts->whereNotDeleted();
-			$accounts->row();
-
-			$running_total = $balance->balance_forward + $accounts->balance;
+			$running_total = $this->_getBalanceForward($sd);
+//			// now calculate the balance brought forward
+//			$balance = new transaction();
+//			$balance->join('transaction_split', 'transaction_split.transaction_id = transaction.id AND transaction_split.is_deleted = 0', 'LEFT');
+//			$balance->select("SUM(CASE WHEN transaction.type = 'CREDIT' AND transaction.category_id != 0 THEN transaction.amount ELSE 0 END) " .
+//								" + SUM(CASE WHEN transaction.type = 'DSLIP' AND transaction.category_id != 0 THEN transaction.amount ELSE 0 END) " .
+//								" - SUM(CASE WHEN transaction.type = 'DEBIT' AND transaction.category_id != 0 THEN transaction.amount ELSE 0 END) " .
+//								" - SUM(CASE WHEN transaction.type = 'CHECK' AND transaction.category_id != 0 THEN transaction.amount ELSE 0 END) " .
+//								" + SUM(CASE WHEN transaction_split.type = 'CREDIT' AND transaction.category_id = 0 THEN transaction_split.amount ELSE 0 END) " .
+//								" + SUM(CASE WHEN transaction_split.type = 'DSLIP' AND transaction.category_id = 0 THEN transaction_split.amount ELSE 0 END) " .
+//								" - SUM(CASE WHEN transaction_split.type = 'DEBIT' AND transaction.category_id = 0 THEN transaction_split.amount ELSE 0 END) " .
+//								" - SUM(CASE WHEN transaction_split.type = 'CHECK' AND transaction.category_id = 0 THEN transaction_split.amount ELSE 0 END) " .
+//								" AS balance_forward");
+//			$balance->where('transaction.is_deleted', 0);
+//			$balance->where("transaction.transaction_date < '" . $sd . "'");
+//			$balance->row();
+//
+//			// get the starting bank balances
+//			$accounts = new bank_account();
+//			$accounts->select('SUM(balance) as balance');
+//			$accounts->whereNotDeleted();
+//			$accounts->row();
+//
+//			$running_total = $balance->balance_forward + $accounts->balance;
 
 			$data = array();
 			$data['balance_forward'] = $running_total;
@@ -222,6 +222,7 @@ class dashboard_controller Extends rest_controller
 					$data = array();
 					$data['interval_total'] = 0;
 					$data['running_total'] = $running_total;
+					$data['balance_forward'] = $running_total;
 
 					$isd = $this->_getNextDate($isd, $this->budget_interval, $this->budget_interval_unit);		// set the interval start date
 					$ied = $this->_getNextDate($isd, $this->budget_interval, $this->budget_interval_unit);
@@ -270,6 +271,7 @@ class dashboard_controller Extends rest_controller
 				$output[] = $data;
 			}
 
+			$balance_forward = FALSE;
 			$running_total = 0;
 			// now add the forecast in
 			foreach ($output as $x => &$period)
@@ -279,6 +281,10 @@ class dashboard_controller Extends rest_controller
 				$now = time();
 				if (($now >= $sd && $now <= $ed) || $now < $ed)
 				{
+					if ($balance_forward)
+					{
+						$period['balance_forward'] = $balance_forward;
+					}
 					// check to see what current values need to be from the forecast
 					foreach ($period['totals'] as $y => $intervalAmount)
 					{
@@ -291,6 +297,7 @@ class dashboard_controller Extends rest_controller
 						}
 					}
 					$period['running_total'] += $running_total;
+					$balance_forward = $period['running_total'];
 				}
 			}
 
@@ -300,6 +307,34 @@ class dashboard_controller Extends rest_controller
 //		}
 
 		$this->ajax->output();
+	}
+
+	// TODO: include forecast in the balance forward if necessary
+	private function _getBalanceForward($sd)
+	{
+		// now calculate the balance brought forward
+		$balance = new transaction();
+		$balance->join('transaction_split', 'transaction_split.transaction_id = transaction.id AND transaction_split.is_deleted = 0', 'LEFT');
+		$balance->select("SUM(CASE WHEN transaction.type = 'CREDIT' AND transaction.category_id != 0 THEN transaction.amount ELSE 0 END) " .
+							" + SUM(CASE WHEN transaction.type = 'DSLIP' AND transaction.category_id != 0 THEN transaction.amount ELSE 0 END) " .
+							" - SUM(CASE WHEN transaction.type = 'DEBIT' AND transaction.category_id != 0 THEN transaction.amount ELSE 0 END) " .
+							" - SUM(CASE WHEN transaction.type = 'CHECK' AND transaction.category_id != 0 THEN transaction.amount ELSE 0 END) " .
+							" + SUM(CASE WHEN transaction_split.type = 'CREDIT' AND transaction.category_id = 0 THEN transaction_split.amount ELSE 0 END) " .
+							" + SUM(CASE WHEN transaction_split.type = 'DSLIP' AND transaction.category_id = 0 THEN transaction_split.amount ELSE 0 END) " .
+							" - SUM(CASE WHEN transaction_split.type = 'DEBIT' AND transaction.category_id = 0 THEN transaction_split.amount ELSE 0 END) " .
+							" - SUM(CASE WHEN transaction_split.type = 'CHECK' AND transaction.category_id = 0 THEN transaction_split.amount ELSE 0 END) " .
+							" AS balance_forward");
+		$balance->where('transaction.is_deleted', 0);
+		$balance->where("transaction.transaction_date < '" . $sd . "'");
+		$balance->row();
+
+		// get the starting bank balances
+		$accounts = new bank_account();
+		$accounts->select('SUM(balance) as balance');
+		$accounts->whereNotDeleted();
+		$accounts->row();
+
+		return $balance->balance_forward + $accounts->balance;
 	}
 
 	private function _getNextDate($myDateTimeISO, $addThese, $unit)
@@ -378,6 +413,7 @@ class dashboard_controller Extends rest_controller
 		$data = array();
 		$data['totals'] = array();
 		$data['interval_total'] = 0;
+
 		foreach ($transactions[0] as $label => $value)
 		{
 			if (substr($label, 0, 6) == 'total_')
@@ -392,7 +428,8 @@ class dashboard_controller Extends rest_controller
 				$data['interval_total'] += $value;
 			}
 		}
-
+		$data['balance_forward']	= $this->_getBalanceForward($sd);
+		$data['running_total']		= $data['balance_forward'] + $data['interval_total'];
 		$data['interval_beginning']	= date('c', strtotime($sd));
 		$data['interval_ending']	= date('c', strtotime($ed . " 23:59:59 -1 DAY"));
 
