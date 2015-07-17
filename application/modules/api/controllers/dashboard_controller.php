@@ -70,8 +70,8 @@ class dashboard_controller Extends rest_controller
 		$categories->whereNotDeleted();
 		$categories->orderBy('order');
 		$categories->result();
-		if ($categories->numRows())
-		{
+//		if ($categories->numRows())
+//		{
 			$interval = $this->input->get('interval');
 			if (!is_numeric($interval))
 			{
@@ -143,8 +143,6 @@ class dashboard_controller Extends rest_controller
 
 					$sd = $start->format('Y-m-d');
 					$ed = $end->format('Y-m-d');
-//					$sd = date('Y-m-d', strtotime($this->budget_start_date . " +" . $start_month . " Months"));
-//					$ed = date('Y-m-d', strtotime($this->budget_start_date . " +" . $end_month . " Months"));
 
 					$sql[] = "WHERE T.transaction_date >= '" . $sd . "' AND T.transaction_date < '" . $ed . "' AND T.is_deleted = 0";
 					$sql[] = "GROUP BY MONTH(T.transaction_date)";
@@ -297,9 +295,9 @@ class dashboard_controller Extends rest_controller
 			}
 
 			$this->ajax->setData('result', $output);
-		} else {
-			$this->ajax->addError(new AjaxError("No categories found"));
-		}
+//		} else {
+//			$this->ajax->addError(new AjaxError("No categories found"));
+//		}
 
 		$this->ajax->output();
 	}
@@ -318,6 +316,89 @@ class dashboard_controller Extends rest_controller
 			date_modify($myDateTime, "-" . $myNewDayOfMonth . " " . $unit);
 		}
 		return date_format($myDateTime, "Y-m-d");
+	}
+
+	public function interval()
+	{
+		if ($_SERVER['REQUEST_METHOD'] != 'GET')
+		{
+//			$this->ajax->set_header("Forbidden", '403');
+			$this->ajax->addError(new AjaxError("403 - Forbidden (dashboard/interval)"));
+			$this->ajax->output();
+		}
+
+		$interval_beginning	= $this->input->get('interval_beginning');
+		if (!$interval_beginning || !strtotime($interval_beginning))
+		{
+			$this->ajax->addError(new AjaxError("Invalid interval_beginning - dashboard/these"));
+			$this->ajax->output();
+		}
+		$interval_beginning = explode('T', $interval_beginning);
+		$sd = date('Y-m-d', strtotime($interval_beginning[0]));
+
+		$interval_ending	= $this->input->get('interval_ending');
+		if (!$interval_ending || !strtotime($interval_ending))
+		{
+			$this->ajax->addError(new AjaxError("Invalid interval ending - dashboard/these"));
+			$this->ajax->output();
+		}
+		$interval_ending = explode('T', $interval_ending);
+		$ed = date('Y-m-d', strtotime($interval_ending[0]));
+
+		$categories = new category();
+		$categories->whereNotDeleted();
+		$categories->orderBy('order');
+		$categories->result();
+
+		$select = array();
+		$select[] = "T.transaction_date";
+		foreach ($categories as $category)
+		{
+			$select[] = "SUM(CASE WHEN T.category_id = " . $category->id . " AND T.type = 'CREDIT' THEN T.amount ELSE 0 END)" .
+						" + SUM(CASE WHEN T.category_id = " . $category->id . " AND T.type = 'DSLIP' THEN T.amount ELSE 0 END)" .
+						" - SUM(CASE WHEN T.category_id = " . $category->id . " AND T.type = 'CHECK' THEN T.amount ELSE 0 END)" .
+						" - SUM(CASE WHEN T.category_id = " . $category->id . " AND T.type = 'DEBIT' THEN T.amount ELSE 0 END) " .
+						" + SUM(CASE WHEN TS.category_id = " . $category->id . " AND TS.type = 'CREDIT' THEN TS.amount ELSE 0 END)" .
+						" + SUM(CASE WHEN TS.category_id = " . $category->id . " AND TS.type = 'DSLIP' THEN TS.amount ELSE 0 END)" .
+						" - SUM(CASE WHEN TS.category_id = " . $category->id . " AND TS.type = 'CHECK' THEN TS.amount ELSE 0 END)" .
+						" - SUM(CASE WHEN TS.category_id = " . $category->id . " AND TS.type = 'DEBIT' THEN TS.amount ELSE 0 END) " .
+						"AS total_" . $category->id;
+		}
+
+		$sql = array();
+		$sql[] = "SELECT";
+		$sql[] = implode(',', $select);
+		$sql[] = "FROM transaction T";
+		$sql[] = "LEFT JOIN transaction_split TS ON TS.transaction_id = T.id AND TS.is_deleted = 0";
+		$sql[] = "WHERE T.transaction_date >= '" . $sd . "' AND T.transaction_date < '" . $ed . "' AND T.is_deleted = 0";
+
+		$transactions = new transaction();
+		$transactions->queryAll(implode(' ', $sql));
+
+		$data = array();
+		$data['totals'] = array();
+		$data['interval_total'] = 0;
+		foreach ($transactions[0] as $label => $value)
+		{
+			if (substr($label, 0, 6) == 'total_')
+			{
+				$index = explode('_', $label);
+				if (!empty($data['totals'][$index[1]]))
+				{
+					$data['totals'][$index[1]] += $value;
+				} else {
+					$data['totals'][$index[1]] = $value;
+				}
+				$data['interval_total'] += $value;
+			}
+		}
+
+		$data['interval_beginning']	= date('c', strtotime($sd));
+		$data['interval_ending']	= date('c', strtotime($ed . " 23:59:59 -1 DAY"));
+
+		$this->ajax->setData('result', $data);
+
+		$this->ajax->output();
 	}
 
 	public function these()
