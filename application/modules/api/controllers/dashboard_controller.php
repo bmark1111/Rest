@@ -169,34 +169,10 @@ class dashboard_controller Extends rest_controller
 
 		$transactions = new transaction();
 		$transactions->queryAll(implode(' ', $sql));
-//print $transactions;
-//die;
+
 		$forecast = $this->_loadForecast($categories, $sd, $ed);
 
 		$running_total = $this->_getBalanceForward($sd);
-//			// now calculate the balance brought forward
-//			$balance = new transaction();
-//			$balance->join('transaction_split', 'transaction_split.transaction_id = transaction.id AND transaction_split.is_deleted = 0', 'LEFT');
-//			$balance->select("SUM(CASE WHEN transaction.type = 'CREDIT' AND transaction.category_id != 0 THEN transaction.amount ELSE 0 END) " .
-//								" + SUM(CASE WHEN transaction.type = 'DSLIP' AND transaction.category_id != 0 THEN transaction.amount ELSE 0 END) " .
-//								" - SUM(CASE WHEN transaction.type = 'DEBIT' AND transaction.category_id != 0 THEN transaction.amount ELSE 0 END) " .
-//								" - SUM(CASE WHEN transaction.type = 'CHECK' AND transaction.category_id != 0 THEN transaction.amount ELSE 0 END) " .
-//								" + SUM(CASE WHEN transaction_split.type = 'CREDIT' AND transaction.category_id = 0 THEN transaction_split.amount ELSE 0 END) " .
-//								" + SUM(CASE WHEN transaction_split.type = 'DSLIP' AND transaction.category_id = 0 THEN transaction_split.amount ELSE 0 END) " .
-//								" - SUM(CASE WHEN transaction_split.type = 'DEBIT' AND transaction.category_id = 0 THEN transaction_split.amount ELSE 0 END) " .
-//								" - SUM(CASE WHEN transaction_split.type = 'CHECK' AND transaction.category_id = 0 THEN transaction_split.amount ELSE 0 END) " .
-//								" AS balance_forward");
-//			$balance->where('transaction.is_deleted', 0);
-//			$balance->where("transaction.transaction_date < '" . $sd . "'");
-//			$balance->row();
-//
-//			// get the starting bank balances
-//			$accounts = new bank_account();
-//			$accounts->select('SUM(balance) as balance');
-//			$accounts->whereNotDeleted();
-//			$accounts->row();
-//
-//			$running_total = $balance->balance_forward + $accounts->balance;
 
 		$data = array();
 		$data['balance_forward'] = $running_total;
@@ -206,58 +182,76 @@ class dashboard_controller Extends rest_controller
 		$output = array();
 		$date_offset = 0;
 
-		// create interval totals with no values
-		$noTotals = array();
-		foreach ($transactions[0] as $label => $value)
+		if ($transactions->numRows() == 0)
 		{
-			if (substr($label, 0, 6) == 'total_')
+			$data['totals'] = $forecast[0]['totals'];
+			$data['types'] = array();
+			foreach ($data['totals'] as $y => $value)
 			{
-				$index = explode('_', $label);
-				$noTotals[$index[1]] = "0.00";
-			}
-		}
-
-		$isd = $sd;																					// set the first interval start date
-		$ied = $this->_getNextDate($isd, $this->budget_interval, $this->budget_interval_unit);
-		$ied = $this->_getNextDate($ied, -1, 'days');												// set the first interval end date
-
-		// now sort transactions into intervals
-		foreach ($transactions as $transaction)
-		{
-			while (strtotime($transaction->transaction_date) > strtotime($ied))
-			{
-				$data['interval_beginning']	= date('c', strtotime($isd));
-				$data['interval_ending']	= date('c', strtotime($ied . " 23:59:59"));
-				if (empty($data['totals']))
-				{	// no totals for this interval
-					$data['totals'] = $noTotals;
+				$data['interval_total'] += $value;
+				if ($value != 0)
+				{
+					$data['types'][$y] = '1';
 				}
-				$data['running_total'] = $running_total;
-				$output[] = $data;
-
-				$data = array();
-				$data['interval_total'] = 0;
-				$data['running_total'] = $running_total;
-				$data['balance_forward'] = $running_total;
-
-				$isd = $this->_getNextDate($isd, $this->budget_interval, $this->budget_interval_unit);		// set the interval start date
-				$ied = $this->_getNextDate($isd, $this->budget_interval, $this->budget_interval_unit);
-				$ied = $this->_getNextDate($ied, -1, 'days');
 			}
 
-			foreach ($transaction as $label => $value)
+			$isd = $sd;																					// set the first interval start date
+			$ied = $this->_getNextDate($isd, $this->budget_interval, $this->budget_interval_unit);
+			$ied = $this->_getNextDate($ied, -1, 'days');												// set the first interval end date
+		} else {
+			// create interval totals with no values
+			$noTotals = array();
+			foreach ($transactions[0] as $label => $value)
 			{
 				if (substr($label, 0, 6) == 'total_')
 				{
 					$index = explode('_', $label);
-					if (!empty($data['totals'][$index[1]]))
-					{
-						$data['totals'][$index[1]] += $value;
-					} else {
-						$data['totals'][$index[1]] = $value;
+					$noTotals[$index[1]] = "0.00";
+				}
+			}
+
+			$isd = $sd;																					// set the first interval start date
+			$ied = $this->_getNextDate($isd, $this->budget_interval, $this->budget_interval_unit);
+			$ied = $this->_getNextDate($ied, -1, 'days');												// set the first interval end date
+
+			// now sort transactions into intervals
+			foreach ($transactions as $transaction)
+			{
+				while (strtotime($transaction->transaction_date) > strtotime($ied))
+				{
+					$data['interval_beginning']	= date('c', strtotime($isd));
+					$data['interval_ending']	= date('c', strtotime($ied . " 23:59:59"));
+					if (empty($data['totals']))
+					{	// no totals for this interval
+						$data['totals'] = $noTotals;
 					}
-					$data['interval_total'] += $value;
-					$running_total += $value;
+					$data['running_total'] = $running_total;
+					$output[] = $data;
+
+					$data = array();
+					$data['interval_total'] = 0;
+					$data['running_total'] = $running_total;
+					$data['balance_forward'] = $running_total;
+
+					$isd = $this->_getNextDate($isd, $this->budget_interval, $this->budget_interval_unit);		// set the interval start date
+					$ied = $this->_getNextDate($isd, $this->budget_interval, $this->budget_interval_unit);
+					$ied = $this->_getNextDate($ied, -1, 'days');
+				}
+
+				foreach ($transaction as $label => $value)
+				{
+					if (substr($label, 0, 6) == 'total_')
+					{
+						$index = explode('_', $label);
+						if (!empty($data['totals'][$index[1]]))
+						{
+							$data['totals'][$index[1]] += $value;
+						} else {
+							$data['totals'][$index[1]] = $value;
+						}
+						$data['interval_total'] += $value;
+						$running_total += $value;
+					}
 				}
 			}
 		}
@@ -369,91 +363,6 @@ class dashboard_controller Extends rest_controller
 		return date_format($myDateTime, "Y-m-d");
 	}
 
-/*	public function interval()
-	{
-		if ($_SERVER['REQUEST_METHOD'] != 'GET')
-		{
-//			$this->ajax->set_header("Forbidden", '403');
-			$this->ajax->addError(new AjaxError("403 - Forbidden (dashboard/interval)"));
-			$this->ajax->output();
-		}
-
-		$interval_beginning	= $this->input->get('interval_beginning');
-		if (!$interval_beginning || !strtotime($interval_beginning))
-		{
-			$this->ajax->addError(new AjaxError("Invalid interval_beginning - dashboard/these"));
-			$this->ajax->output();
-		}
-		$interval_beginning = explode('T', $interval_beginning);
-		$sd = date('Y-m-d', strtotime($interval_beginning[0]));
-
-		$interval_ending	= $this->input->get('interval_ending');
-		if (!$interval_ending || !strtotime($interval_ending))
-		{
-			$this->ajax->addError(new AjaxError("Invalid interval ending - dashboard/these"));
-			$this->ajax->output();
-		}
-		$interval_ending = explode('T', $interval_ending);
-		$ed = date('Y-m-d', strtotime($interval_ending[0]));
-
-		$categories = new category();
-		$categories->whereNotDeleted();
-		$categories->orderBy('order');
-		$categories->result();
-
-		$select = array();
-		$select[] = "T.transaction_date";
-		foreach ($categories as $category)
-		{
-			$select[] = "SUM(CASE WHEN T.category_id = " . $category->id . " AND T.type = 'CREDIT' THEN T.amount ELSE 0 END)" .
-						" + SUM(CASE WHEN T.category_id = " . $category->id . " AND T.type = 'DSLIP' THEN T.amount ELSE 0 END)" .
-						" - SUM(CASE WHEN T.category_id = " . $category->id . " AND T.type = 'CHECK' THEN T.amount ELSE 0 END)" .
-						" - SUM(CASE WHEN T.category_id = " . $category->id . " AND T.type = 'DEBIT' THEN T.amount ELSE 0 END) " .
-						" + SUM(CASE WHEN TS.category_id = " . $category->id . " AND TS.type = 'CREDIT' THEN TS.amount ELSE 0 END)" .
-						" + SUM(CASE WHEN TS.category_id = " . $category->id . " AND TS.type = 'DSLIP' THEN TS.amount ELSE 0 END)" .
-						" - SUM(CASE WHEN TS.category_id = " . $category->id . " AND TS.type = 'CHECK' THEN TS.amount ELSE 0 END)" .
-						" - SUM(CASE WHEN TS.category_id = " . $category->id . " AND TS.type = 'DEBIT' THEN TS.amount ELSE 0 END) " .
-						"AS total_" . $category->id;
-		}
-
-		$sql = array();
-		$sql[] = "SELECT";
-		$sql[] = implode(',', $select);
-		$sql[] = "FROM transaction T";
-		$sql[] = "LEFT JOIN transaction_split TS ON TS.transaction_id = T.id AND TS.is_deleted = 0";
-		$sql[] = "WHERE T.transaction_date >= '" . $sd . "' AND T.transaction_date < '" . $ed . "' AND T.is_deleted = 0";
-
-		$transactions = new transaction();
-		$transactions->queryAll(implode(' ', $sql));
-
-		$data = array();
-		$data['totals'] = array();
-		$data['interval_total'] = 0;
-
-		foreach ($transactions[0] as $label => $value)
-		{
-			if (substr($label, 0, 6) == 'total_')
-			{
-				$index = explode('_', $label);
-				if (!empty($data['totals'][$index[1]]))
-				{
-					$data['totals'][$index[1]] += $value;
-				} else {
-					$data['totals'][$index[1]] = $value;
-				}
-				$data['interval_total'] += $value;
-			}
-		}
-		$data['balance_forward']	= $this->_getBalanceForward($sd);
-		$data['running_total']		= $data['balance_forward'] + $data['interval_total'];
-		$data['interval_beginning']	= date('c', strtotime($sd));
-		$data['interval_ending']	= date('c', strtotime($ed . " 23:59:59 -1 DAY"));
-
-		$this->ajax->setData('result', $data);
-
-		$this->ajax->output();
-	}
-*/
 	public function these()
 	{
 		if ($_SERVER['REQUEST_METHOD'] != 'GET')
