@@ -471,9 +471,28 @@ class dashboard_controller Extends rest_controller
 						$fc->next_due_dates = $next_due_dates;
 						break;
 					case 'Weeks':
+//if ($fc->id == 30)
+//{
+//	echo "sd = $sd\n";
+//}
 						$diff = $this->_datediffInWeeks($fc->first_due_date, $sd);
+//if ($fc->id == 30)
+//{
+//	echo "diff = $diff\n";
+//}
 						$diff = intval(round($diff / $fc->every) * $fc->every);
+//if ($fc->id == 30)
+//{
+//	echo "diff = $diff\n";
+//}
+						// TODO: need to fix this - calculate from sd if diff is calculated from sd - doesn't work in some circumstances ???????????????????/
 						$fdd = date('Y-m-d', strtotime($fc->first_due_date . " +" . $diff . " " . $fc->every_unit));		// set first due date
+//						$fdd = date('Y-m-d', strtotime($sd . " +" . $diff . " " . $fc->every_unit));		// set first due date
+//if ($fc->id == 30)
+//{
+//	print $fc;
+//	die($fdd);
+//}
 						while (strtotime($fdd . " +" . $offset . " " . $fc->every_unit) < strtotime($ed) && (!$fc->last_due_date || strtotime($fdd . " +" . $offset . " " . $fc->every_unit) <= strtotime($fc->last_due_date)))
 						{
 							if (strtotime($fdd . " +" . $offset . " " . $fc->every_unit) >= strtotime($fc->first_due_date))
@@ -512,7 +531,7 @@ class dashboard_controller Extends rest_controller
 						break;
 				}
 			}
-
+//print $forecast;die;
 			// now sum the expenses for the forecast intervals
 			$xx = 0;
 			$offset = 0;
