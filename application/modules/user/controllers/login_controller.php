@@ -19,7 +19,7 @@ class login_controller extends EP_Controller
 		$username = $_SERVER['PHP_AUTH_USER'];
 		$password = $_SERVER['PHP_AUTH_PW'];
 
-		if ($username == 'sadmin' && strncmp($_SERVER['REMOTE_ADDR'], '67.203.162.', 11) != 0 && $_SERVER['REMOTE_ADDR'] != '127.0.0.1')
+		if ($username == 'sadmin' && strncmp($_SERVER['REMOTE_ADDR'], '99.999.999.', 11) != 0 && $_SERVER['REMOTE_ADDR'] != '127.0.0.1')
 		{
 			$this->ajax->addError(new AjaxError('Your login credentials are incorrect'));
 			$this->ajax->output();			// only allow super admin login from known IP range
