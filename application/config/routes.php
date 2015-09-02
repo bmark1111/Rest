@@ -44,11 +44,10 @@ $route['404_override'] = '';
 $route['login']									= "user/login";						// GET - login
 $route['data/logout']							= "user/logout";					// POST - logout
 
-$route['data/dashboard/load']					= "api/dashboard/load";				// GET - load dashboard transactions
-//$route['data/dashboard/interval']				= "api/dashboard/interval";			// GET - load dashboard transactions for specified interval
-$route['data/dashboard/these']					= "api/dashboard/these";			// GET - load dashboard transactions for interval and category
-//$route['data/dashboard/load2']					= "api/dashboard/load2";			// GET - load dashboard forecast
-//$route['data/dashboard/this']					= "api/dashboard/this";				// GET - load dashboard forecast transactions for interval and category
+$route['data/budget/load']						= "api/budget/load";				// GET - load dashboard transactions
+$route['data/budget/these']						= "api/budget/these";				// GET - load dashboard transactions for interval and category
+
+$route['data/dashboard/ytdTotals']				= "api/dashboard/ytdTotals";		// GET - load YTD Totals
 
 $route['data/transaction/loadAll']				= "api/transaction/loadAll";		// GET - load all transactions in list
 $route['data/transaction/delete']				= "api/transaction/delete";			// GET - delete transaction
