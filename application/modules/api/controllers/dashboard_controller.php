@@ -8,46 +8,10 @@ require_once ('rest_controller.php');
 class dashboard_controller Extends rest_controller
 {
 	protected $debug = TRUE;
-//	private $budget_mode = FALSE;
-//	private $budget_start_date = FALSE;
-//	private $budget_interval = FALSE;
-//	private $budget_interval_unit = FALSE;
-//	private $budget_views = 6;
 
 	public function __construct()
 	{
 		parent::__construct();
-
-//		$config = new configuration();
-//		$config->getBy('name', 'budget_mode');
-//		$this->budget_mode  = $config->value;
-//		switch ($this->budget_mode)
-//		{
-//			case 'weekly':
-//				$this->budget_interval = 7;
-//				$this->budget_interval_unit = 'Days';
-//				break;
-//			case 'bi-weekly':
-//				$this->budget_interval = 14;
-//				$this->budget_interval_unit = 'Days';
-//				break;
-//			case 'semi-monthy':
-//				$this->budget_interval = 1;
-//				$this->budget_interval_unit = 'Months';
-//				break;
-//			case 'monthly':
-//				$this->budget_interval = 1;
-//				$this->budget_interval_unit = 'Months';
-//				break;
-//			default:
-////				throw new Exception("Invalid budget_mode setting");
-//				$this->ajax->addError(new AjaxError("Invalid budget_mode setting (dashboard controller)"));
-//				$this->ajax->output();
-//		}
-//
-//		$config->getBy('name', 'budget_start_date');
-//		$this->budget_start_date  = $config->value;
-//		$this->budget_views = 6;						// TODO: this should be passed in to accomodate more budget intervals
 	}
 
 	public function index()
@@ -93,228 +57,67 @@ class dashboard_controller Extends rest_controller
 		$sql[] = "LEFT JOIN transaction_split TS ON TS.transaction_id = T.id AND TS.is_deleted = 0";
 		$sql[] = "WHERE YEAR(transaction_date) = '" . date('Y') . "' AND T.is_deleted = 0";
 
-/*		switch ($this->budget_mode)
-		{
-			case 'weekly':
-				$offset = $this->_getEndDay();
-//				$start_day = ($offset - ($this->budget_interval * ($this->budget_views - $interval)));		// - 'budget_views' entries and adjust for interval
-//				$end_day = ($offset + ($this->budget_interval * ($this->budget_views + $interval)));		// + 'budget_views' entries and adjust for interval
-				if ($interval == 0)
-				{
-					$start_day = ($offset - ($this->budget_interval * $this->budget_views));					// - 'budget_views' entries and adjust for interval
-					$end_day = ($offset + ($this->budget_interval * $this->budget_views));						// + 'budget_views' entries and adjust for interval
-				}
-				else if ($interval < 0)
-				{
-					$start_day = ($offset + ($this->budget_interval * ($interval - $this->budget_views)));		// - 'budget_views' entries and adjust for interval
-					$end_day = ($offset + ($this->budget_interval * ($interval - $this->budget_views + 1)));	// + 'budget_views' entries and adjust for interval
-				}
-				else if ($interval > 0)
-				{
-					$start_day = ($offset + ($this->budget_interval * ($interval + $this->budget_views - 1)));	// - 'budget_views' entries and adjust for interval
-					$end_day = ($offset + ($this->budget_interval * ($interval + $this->budget_views)) - 1);	// + 'budget_views' entries and adjust for interval
-				}
-				$sd = date('Y-m-d', strtotime($this->budget_start_date . " +" . $start_day . " Days"));
-				$ed = date('Y-m-d', strtotime($this->budget_start_date . " +" . $end_day . " Days"));
-
-				$sql[] = "WHERE T.transaction_date >= '" . $sd . "' AND T.transaction_date < '" . $ed . "' AND T.is_deleted = 0";
-				$sql[] = "GROUP BY DAYOFYEAR(T.transaction_date)";
-				$sql[] = "ORDER BY DAYOFYEAR(T.transaction_date) ASC";
-				break;
-			case 'bi-weekly':
-				$offset = $this->_getEndDay();
-				$start_day = ($offset - ($this->budget_interval * ($this->budget_views - $interval)));		// - 'budget_views' entries and adjust for interval
-				$end_day = ($offset + ($this->budget_interval * ($this->budget_views + $interval)));		// + 'budget_views' entries and adjust for interval
-				$sd = date('Y-m-d', strtotime($this->budget_start_date . " +" . $start_day . " Days"));
-				$ed = date('Y-m-d', strtotime($this->budget_start_date . " +" . $end_day . " Days"));
-
-				$sql[] = "WHERE T.transaction_date >= '" . $sd . "' AND T.transaction_date < '" . $ed . "' AND T.is_deleted = 0";
-				$sql[] = "GROUP BY DAYOFYEAR(T.transaction_date)";
-				$sql[] = "ORDER BY DAYOFYEAR(T.transaction_date) ASC";
-				break;
-			case 'semi-monthy':
-				// TODO: divide the month:-
-				//		1st through the 15th and 16th through the end of month
-
-				$sql[] = "WHERE T.transaction_date >= '" . $sd . "' AND T.transaction_date < '" . $ed . "' AND T.is_deleted = 0";
-				$sql[] = "GROUP BY DAYOFYEAR(T.transaction_date)";
-				$sql[] = "ORDER BY DAYOFYEAR(T.transaction_date) ASC";
-				break;
-			case 'monthly':
-				$offset = date('n');			// get the current month
-				$start_month = ($offset - ($this->budget_interval * ($this->budget_views - $interval)));	// go back 'budget views' and adjust for interval
-				$end_month = ($offset + ($this->budget_interval * ($this->budget_views + $interval)));		// go forward 'budget views' and adjust for interval
-				$start = new DateTime($this->budget_start_date);
-				$start->add(new DateInterval("P" . $start_month . "M"));
-				$end = new DateTime($this->budget_start_date);
-				$end->add(new DateInterval("P" . $end_month . "M"));
-
-				$sd = $start->format('Y-m-d');
-				$ed = $end->format('Y-m-d');
-
-				$sql[] = "WHERE T.transaction_date >= '" . $sd . "' AND T.transaction_date < '" . $ed . "' AND T.is_deleted = 0";
-				$sql[] = "GROUP BY MONTH(T.transaction_date)";
-				$sql[] = "ORDER BY MONTH(T.transaction_date) ASC";
-				break;
-			default:
-				$this->ajax->addError(new AjaxError("Invalid budget_mode setting (dashboard/load)"));
-				$this->ajax->output();
-		}
-*/
 		$transactions = new transaction();
 		$transactions->query(implode(' ', $sql));
 
 		$this->ajax->setData('result', $transactions);
-
-//		$forecast = $this->_loadForecast($categories, $sd, $ed);
-//
-//		$running_total = $this->_getBalanceForward($sd);
-//
-//		$data = array();
-//		$data['balance_forward'] = $running_total;
-//		$data['interval_total'] = 0;
-//		$data['running_total'] = $running_total;
-//
-//		$output = array();
-//		$date_offset = 0;
-//
-//		if ($transactions->numRows() == 0)
-//		{
-//			$data['totals'] = $forecast[0]['totals'];
-//			$data['types'] = array();
-//			foreach ($data['totals'] as $y => $value)
-//			{
-//				$data['interval_total'] += $value;
-//				if ($value != 0)
-//				{
-//					$data['types'][$y] = '1';
-//				}
-//			}
-//
-//			$isd = $sd;																					// set the first interval start date
-//			$ied = $this->_getNextDate($isd, $this->budget_interval, $this->budget_interval_unit);
-//			$ied = $this->_getNextDate($ied, -1, 'days');												// set the first interval end date
-//		} else {
-//			// create interval totals with no values
-//			$noTotals = array();
-//			foreach ($transactions[0] as $label => $value)
-//			{
-//				if (substr($label, 0, 6) == 'total_')
-//				{
-//					$index = explode('_', $label);
-//					$noTotals[$index[1]] = "0.00";
-//				}
-//			}
-//
-//			$isd = $sd;																					// set the first interval start date
-//			$ied = $this->_getNextDate($isd, $this->budget_interval, $this->budget_interval_unit);
-//			$ied = $this->_getNextDate($ied, -1, 'days');												// set the first interval end date
-//
-//			// now sort transactions into intervals
-//			foreach ($transactions as $transaction)
-//			{
-//				while (strtotime($transaction->transaction_date) > strtotime($ied))
-//				{
-//					$data['interval_beginning']	= date('c', strtotime($isd));
-//					$data['interval_ending']	= date('c', strtotime($ied . " 23:59:59"));
-//					if (empty($data['totals']))
-//					{	// no totals for this interval
-//						$data['totals'] = $noTotals;
-//					}
-//					$data['running_total'] = $running_total;
-//					$output[] = $data;
-//
-//					$data = array();
-//					$data['interval_total'] = 0;
-//					$data['running_total'] = $running_total;
-//					$data['balance_forward'] = $running_total;
-//
-//					$isd = $this->_getNextDate($isd, $this->budget_interval, $this->budget_interval_unit);		// set the interval start date
-//					$ied = $this->_getNextDate($isd, $this->budget_interval, $this->budget_interval_unit);
-//					$ied = $this->_getNextDate($ied, -1, 'days');
-//				}
-//
-//				foreach ($transaction as $label => $value)
-//				{
-//					if (substr($label, 0, 6) == 'total_')
-//					{
-//						$index = explode('_', $label);
-//						if (!empty($data['totals'][$index[1]]))
-//						{
-//							$data['totals'][$index[1]] += $value;
-//						} else {
-//							$data['totals'][$index[1]] = $value;
-//						}
-//						$data['interval_total'] += $value;
-//						$running_total += $value;
-//					}
-//				}
-//			}
-//		}
-//
-//		$data['running_total'] = $running_total;
-//		$data['interval_beginning']	= date('c', strtotime($isd));
-//		$data['interval_ending']	= date('c', strtotime($ied . " 23:59:59"));
-//		$output[] = $data;
-//
-//		if ($interval == 0)
-//		{	// show budgetviews * 2 intervals in the initial load
-//			while (count($output) < ($this->budget_views * 2))		// show 12 intervals
-//			{
-//				foreach ($data['totals'] as &$total)
-//				{
-//					$total = 0;
-//				}
-//
-//				$isd = $this->_getNextDate($isd, $this->budget_interval, $this->budget_interval_unit);		// set the interval start date
-//				$ied = $this->_getNextDate($isd, $this->budget_interval, $this->budget_interval_unit);
-//				$ied = $this->_getNextDate($ied, -1, 'days');												// set the interval end date
-//				$data['interval_beginning']	= date('c', strtotime($isd));
-//				$data['interval_ending']	= date('c', strtotime($ied . " 23:59:59"));
-//				$data['interval_total']		= 0;
-//				if (empty($data['running_total']) || $data['running_total'] == 0)
-//				{
-//					$data['running_total']	= $running_total;
-//				}
-//				$output[] = $data;
-//			}
-//		}
-//
-//		$balance_forward = FALSE;
-//		$running_total = 0;
-//		// now add the forecast in
-//		foreach ($output as $x => &$period)
-//		{
-//			$sd = strtotime($period['interval_beginning']);
-//			$ed = strtotime($period['interval_ending']);
-//			$now = time();
-//			if (($now >= $sd && $now <= $ed) || $now < $ed)
-//			{
-//				if ($balance_forward)
-//				{
-//					$period['balance_forward'] = $balance_forward;
-//				}
-//				// check to see what current values need to be from the forecast
-//				foreach ($period['totals'] as $y => $intervalAmount)
-//				{
-//					if ($intervalAmount == 0 && $forecast[$x]['totals'][$y] != 0)
-//					{	// if interval amount is zero and the forecast has a value then ... use the forecasted amount
-//						$period['totals'][$y] = floatval($forecast[$x]['totals'][$y]);				// use the forcasted amount
-//						$period['types'][$y] = '1';													// flag this as a forecast total
-//						$period['interval_total'] += floatval($forecast[$x]['totals'][$y]);			// update the interval total
-//						$running_total += floatval($forecast[$x]['totals'][$y]);					// update the running total
-//					}
-//				}
-//				$period['running_total'] += $running_total;
-//				$balance_forward = $period['running_total'];
-//			}
-//		}
-//
-//		$this->ajax->setData('result', $output);
+		$this->ajax->setData('year', date('Y'));
 
 		$this->ajax->output();
 	}
 
+	public function these()
+	{
+		if ($_SERVER['REQUEST_METHOD'] != 'GET')
+		{
+//			$this->ajax->set_header("Forbidden", '403');
+			$this->ajax->addError(new AjaxError("Error: 403 Forbidden - (dashboard/these)"));
+			$this->ajax->output();
+		}
+
+		$year	= $this->input->get('year');
+		if (!$year || !is_numeric($year))
+		{
+			$this->ajax->addError(new AjaxError("Error: Invalid year - (dashboard/these)"));
+			$this->ajax->output();
+		}
+
+		$category_id	= $this->input->get('category_id');
+		if ($category_id == 0 || !is_numeric($category_id))
+		{
+			$this->ajax->addError(new AjaxError("Error: Invalid category id - (dashboard/these)"));
+			$this->ajax->output();
+		}
+
+		$transactions = new transaction();
+		$sql = "(SELECT T.transaction_date, T.type, T.description, T.notes, T.amount
+				FROM transaction T
+				WHERE T.is_deleted = 0
+					AND T.category_id = " . $category_id . " AND T.category_id IS NOT NULL
+					AND YEAR(T.`transaction_date`) = " . $year . ")
+			UNION
+				(SELECT T.transaction_date, T.type, T.description, TS.notes, TS.amount
+				FROM transaction T
+				LEFT JOIN transaction_split TS ON T.id = TS.transaction_id
+				WHERE T.is_deleted = 0
+					AND TS.category_id = " . $category_id . " AND T.category_id IS NULL
+					AND YEAR(T.`transaction_date`) = " . $year . ")
+			ORDER BY transaction_date DESC";
+		$transactions->queryAll($sql);
+		if ($transactions->numRows())
+		{
+			foreach ($transactions as $transaction)
+			{
+				$transaction->amount = ($transaction->type == 'CHECK' || $transaction->type == 'DEBIT') ? -$transaction->amount: $transaction->amount;
+			}
+			$this->ajax->setData('result', $transactions);
+		} else {
+			$this->ajax->addError(new AjaxError("Error: No transactions found - (dashboard/these)"));
+		}
+		$this->ajax->output();
+	}
+
+/*
 	// TODO: include forecast in the balance forward if necessary
 	private function _getBalanceForward($sd)
 	{
@@ -595,7 +398,7 @@ class dashboard_controller Extends rest_controller
 		}
 		return $data;
 	}
-
+*/
 }
 
 // EOF

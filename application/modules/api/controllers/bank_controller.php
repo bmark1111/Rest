@@ -97,7 +97,7 @@ class bank_controller Extends rest_controller
 
 		// VALIDATION
 		$this->form_validation->set_rules('name', 'Bank Name', 'required');
-		$this->form_validation->set_rules('accounts', 'Accounts', 'required');
+		$this->form_validation->set_rules('accounts[0][id]', 'Accounts', 'required');
 
 		// validate account data
 		foreach ($_POST['accounts'] as $idx => $account)

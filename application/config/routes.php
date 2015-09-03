@@ -48,6 +48,7 @@ $route['data/budget/load']						= "api/budget/load";				// GET - load dashboard 
 $route['data/budget/these']						= "api/budget/these";				// GET - load dashboard transactions for interval and category
 
 $route['data/dashboard/ytdTotals']				= "api/dashboard/ytdTotals";		// GET - load YTD Totals
+$route['data/dashboard/these']					= "api/dashboard/these";			// GET - load YTD Transactions for category
 
 $route['data/transaction/loadAll']				= "api/transaction/loadAll";		// GET - load all transactions in list
 $route['data/transaction/delete']				= "api/transaction/delete";			// GET - delete transaction
