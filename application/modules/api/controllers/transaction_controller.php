@@ -143,19 +143,15 @@ class transaction_controller Extends rest_controller
 			$this->ajax->output();
 		}
 
-		$transaction = new transaction($_POST['id']);
+		$id = (!empty($_POST['id'])) ? $_POST['id']: NULL;
+		$transaction = new transaction($id);
 		$transaction->transaction_date	= date('Y-m-d', strtotime($_POST['transaction_date']));
 		$transaction->description		= $_POST['description'];
 		$transaction->type				= $_POST['type'];
-		if (empty($_POST['splits']))
-		{	// ignore category if splits are present
-			$transaction->category_id	= $_POST['category_id'];
-		} else {
-			$transaction->category_id	= NULL;
-		}
-		$transaction->check_num			= $_POST['check_num'];
+		$transaction->category_id		= (empty($_POST['splits'])) ? $_POST['category_id']: NULL; // ignore category if splits are present
+		$transaction->check_num			= (!empty($_POST['check_num'])) ? $_POST['check_num']: NULL;
 		$transaction->amount			= $_POST['amount'];
-		$transaction->notes				= $_POST['notes'];
+		$transaction->notes				= (!empty($_POST['notes'])) ? $_POST['notes']: '';
 		$transaction->bank_account_id	= $_POST['bank_account_id'];
 		$transaction->save();
 
@@ -176,6 +172,105 @@ class transaction_controller Extends rest_controller
 				} else {
 					$transaction_split->delete();
 				}
+			}
+		}
+$this->ajax->output();
+return;
+		// now update the bank_account balances
+		$bank_account_balance = new bank_account_balance();
+		$bank_account_balance->whereNotDeleted();
+		$bank_account_balance->where('date >= ', $transaction->transaction_date);
+		$bank_account_balance->where('bank_account_id', $transaction->bank_account_id);
+		$bank_account_balance->orderBy('date', 'ASC');
+		$bank_account_balance->result();
+echo $bank_account_balance->lastQuery();
+die;
+		if ($bank_account_balance->numRows()) {
+			// found balances so update them
+			$foundThisDate = FALSE;		// flags if we have found a balance record for the exact transaction date
+			$newBalanceAmt = 0;
+			foreach ($bank_account_balance as $balance) {
+				if ($balance->date == $transaction->date) {
+					$foundThisDate = TRUE;	// we found a balance record for this transaction date exactly and updated it
+				} else if ($balance->date > $transaction->date && !$foundThisDate) {
+					// we did not find a balance record for this transaction date, so need to create one
+					// calculate the new balance
+					switch($transaction->type) {
+						case 'DEBIT':
+						case 'CHECK':
+							$newBalanceAmt = $balance->amount - $transaction->amount;
+							break;
+						case 'CREDIT':
+						case 'DSLIP':
+							$newBalanceAmt = $balance->amount + $transaction->amount;
+							break;
+					}
+					$newBalanceDate = $transaction->date;
+				}
+				// calculate the new balance
+				switch($transaction->type) {
+					case 'DEBIT':
+					case 'CHECK':
+						$balance->amount -= $transaction->amount;
+						break;
+					case 'CREDIT':
+					case 'DSLIP':
+						$balance->amount += $transaction->amount;
+						break;
+				}
+				$balance->save();
+			}
+			if (!$foundThisDate) {
+				// we did not find a balance record for this transaction date so create a balacme record
+				$bank_account_balance = new bank_account_balance();
+				$bank_account_balance->bank_account_id	= $transaction->bank_account_id;
+				$bank_account_balance->date				= $newBalanceDate;
+				$bank_account_balance->amount			= $newBalanceAmt;
+				$bank_account_balance->save();
+			}
+		} else {
+			// no balance found for date so find closest
+			$bank_account_balance = new bank_account_balance();
+			$bank_account_balance->whereNotDeleted();
+			$bank_account_balance->select('bank_account_balance.*,MAX(date)');
+			$bank_account_balance->where('bank_account_id', $transaction->bank_account_id);
+			$bank_account_balance->row();
+			if ($bank_account_balance->numRows()) {
+				// found a close balance so create new record for this transaction date
+				unset($bank_account_balance->id);	// this will ensure a new row is created
+				$bank_account_balance->date = $transaction->transaction_date;
+				switch($transaction->type) {
+					case 'DEBIT':
+					case 'CHECK':
+						$bank_account_balance->amount -= $transaction->amount;
+						break;
+					case 'CREDIT':
+					case 'DSLIP':
+						$bank_account_balance->amount += $transaction->amount;
+						break;
+				}
+				$bank_account_balance->save();
+			} else {
+				// no balance record found so create a new record
+				// get the opening account balance and create a new account balance amount
+				$bank_account = new bank_account($transaction->bank_account_id);
+				$amount = $bank_account->amount;
+				switch($transaction->type) {
+					case 'DEBIT':
+					case 'CHECK':
+						$amount -= $transaction->amount;
+						break;
+					case 'CREDIT':
+					case 'DSLIP':
+						$amount += $transaction->amount;
+						break;
+				}
+
+				$bank_account_balance = new bank_account_balance();
+				$bank_account_balance->bank_account_id	= $transaction->bank_account_id;
+				$bank_account_balance->date				= $transaction->transaction_date;
+				$bank_account_balance->balance			= $amount;
+				$bank_account_balance->save();
 			}
 		}
 
