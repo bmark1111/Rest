@@ -174,59 +174,44 @@ class transaction_controller Extends rest_controller
 				}
 			}
 		}
-$this->ajax->output();
-return;
-		// now update the bank_account balances
-		$bank_account_balance = new bank_account_balance();
-		$bank_account_balance->whereNotDeleted();
-		$bank_account_balance->where('date >= ', $transaction->transaction_date);
-		$bank_account_balance->where('bank_account_id', $transaction->bank_account_id);
-		$bank_account_balance->orderBy('date', 'ASC');
-		$bank_account_balance->result();
-echo $bank_account_balance->lastQuery();
-die;
-		if ($bank_account_balance->numRows()) {
+
+		$this->adjustBankBalances($transaction->bank_account_id, $transaction->transaction_date, $transaction->amount, $transaction->type);
+/*		// now update the bank_account balances
+		$bank_account_balances = new bank_account_balance();
+		$bank_account_balances->whereNotDeleted();
+		$bank_account_balances->where('date >= ', $transaction->transaction_date);
+		$bank_account_balances->where('bank_account_id', $transaction->bank_account_id);
+		$bank_account_balances->orderBy('date', 'ASC');
+		$bank_account_balances->result();
+//echo $bank_account_balances->lastQuery()."\n";
+//print $bank_account_balances;
+//die;
+		if ($bank_account_balances->numRows()) {
 			// found balances so update them
 			$foundThisDate = FALSE;		// flags if we have found a balance record for the exact transaction date
-			$newBalanceAmt = 0;
-			foreach ($bank_account_balance as $balance) {
-				if ($balance->date == $transaction->date) {
+			$bank_account_balance = FALSE;
+			foreach ($bank_account_balances as $balance) {
+				if ($balance->date == $transaction->transaction_date) {
 					$foundThisDate = TRUE;	// we found a balance record for this transaction date exactly and updated it
-				} else if ($balance->date > $transaction->date && !$foundThisDate) {
-					// we did not find a balance record for this transaction date, so need to create one
-					// calculate the new balance
-					switch($transaction->type) {
-						case 'DEBIT':
-						case 'CHECK':
-							$newBalanceAmt = $balance->amount - $transaction->amount;
-							break;
-						case 'CREDIT':
-						case 'DSLIP':
-							$newBalanceAmt = $balance->amount + $transaction->amount;
-							break;
-					}
-					$newBalanceDate = $transaction->date;
+				} elseif ($balance->date > $transaction->transaction_date && !$foundThisDate && $bank_account_balance === FALSE) {
+					$bank_account_balance = new bank_account_balance();
+					$bank_account_balance->bank_account_id	= $transaction->bank_account_id;
+					$bank_account_balance->date				= $transaction->transaction_date;
+					$bank_account_balance->balance			= $balance->balance;
+					$bank_account_balance->save();
 				}
 				// calculate the new balance
 				switch($transaction->type) {
 					case 'DEBIT':
 					case 'CHECK':
-						$balance->amount -= $transaction->amount;
+						$balance->balance -= $transaction->amount;
 						break;
 					case 'CREDIT':
 					case 'DSLIP':
-						$balance->amount += $transaction->amount;
+						$balance->balance += $transaction->amount;
 						break;
 				}
 				$balance->save();
-			}
-			if (!$foundThisDate) {
-				// we did not find a balance record for this transaction date so create a balacme record
-				$bank_account_balance = new bank_account_balance();
-				$bank_account_balance->bank_account_id	= $transaction->bank_account_id;
-				$bank_account_balance->date				= $newBalanceDate;
-				$bank_account_balance->amount			= $newBalanceAmt;
-				$bank_account_balance->save();
 			}
 		} else {
 			// no balance found for date so find closest
@@ -242,11 +227,11 @@ die;
 				switch($transaction->type) {
 					case 'DEBIT':
 					case 'CHECK':
-						$bank_account_balance->amount -= $transaction->amount;
+						$bank_account_balance->balance -= $transaction->amount;
 						break;
 					case 'CREDIT':
 					case 'DSLIP':
-						$bank_account_balance->amount += $transaction->amount;
+						$bank_account_balance->balance += $transaction->amount;
 						break;
 				}
 				$bank_account_balance->save();
@@ -273,7 +258,7 @@ die;
 				$bank_account_balance->save();
 			}
 		}
-
+*/
 		$this->ajax->output();
 	}
 
