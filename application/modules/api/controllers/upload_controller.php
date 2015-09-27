@@ -9,22 +9,18 @@ class upload_controller Extends rest_controller
 {
 	protected $debug = TRUE;
 
-	public function __construct()
-	{
+	public function __construct() {
 		parent::__construct();
 	}
 
-	public function index()
-	{
+	public function index() {
 //		$this->ajax->set_header("Forbidden", '403');
 		$this->ajax->addError(new AjaxError("403 - Forbidden (upload/index)"));
 		$this->ajax->output();
 	}
 
-	public function loadAll()
-	{
-		if ($_SERVER['REQUEST_METHOD'] != 'GET')
-		{
+	public function loadAll() {
+		if ($_SERVER['REQUEST_METHOD'] != 'GET') {
 //			$this->ajax->set_header("Forbidden", '403');
 			$this->ajax->addError(new AjaxError("403 - Forbidden (upload/loadAll)"));
 			$this->ajax->output();
@@ -34,8 +30,7 @@ class upload_controller Extends rest_controller
 		$this->_loadAll($params);
 	}
 	
-	private function _loadAll($params)
-	{
+	private function _loadAll($params) {
 		$status				= (!empty($params['status'])) ? $params['status']: FALSE;
 		$date				= (!empty($params['date'])) ? date('Y-m-d', strtotime($params['date'])): FALSE;
 		$description		= (!empty($params['description'])) ? $params['description']: FALSE;
@@ -48,21 +43,17 @@ class upload_controller Extends rest_controller
 		$transactions = new transaction_upload();
 		$transactions->select('SQL_CALC_FOUND_ROWS *', FALSE);
 		$transactions->whereNotDeleted();
-		if ($status)
-		{
+		if ($status) {
 			$status -= 1;
 			$transactions->where('status', $status);
 		}
-		if ($date)
-		{
+		if ($date) {
 			$transactions->where('transaction_date', $date);
 		}
-		if ($description)
-		{
+		if ($description) {
 			$transactions->like('description', $description);
 		}
-		if ($amount)
-		{
+		if ($amount) {
 			$transactions->where('amount', $amount);
 		}
 		$transactions->limit($pagination_amount, $pagination_start);
@@ -71,14 +62,11 @@ class upload_controller Extends rest_controller
 
 		$this->ajax->setData('total_rows', $transactions->foundRows());
 
-		if ($transactions->numRows())
-		{
+		if ($transactions->numRows()) {
 			$pending_count = 0;
-			foreach ($transactions as $transaction)
-			{
+			foreach ($transactions as $transaction) {
 				isset($transaction->bank_account->bank);
-				if ($transaction->status == 0)
-				{
+				if ($transaction->status == 0) {
 					$pending_count++;
 				}
 			}
@@ -90,25 +78,21 @@ class upload_controller Extends rest_controller
 		$this->ajax->output();
 	}
 
-	public function assign()
-	{
-		if ($_SERVER['REQUEST_METHOD'] != 'GET')
-		{
+	public function assign() {
+		if ($_SERVER['REQUEST_METHOD'] != 'GET') {
 //			$this->ajax->set_header("Forbidden", '403');
 			$this->ajax->addError(new AjaxError("403 - Forbidden (upload/assign)"));
 			$this->ajax->output();
 		}
 
 		$id = $this->input->get('id');
-		if (!is_numeric($id) || $id < 0)
-		{
+		if (!is_numeric($id) || $id < 0) {
 			$this->ajax->addError(new AjaxError("Invalid transaction id - (upload/assign)"));
 			$this->ajax->output();
 		}
 
 		$uploaded = new transaction_upload($id);
-		if ($uploaded->numRows())
-		{
+		if ($uploaded->numRows()) {
 			isset($uploaded->bank_account);
 			isset($uploaded->bank_account->bank);
 
@@ -116,8 +100,7 @@ class upload_controller Extends rest_controller
 
 			$transactions = new transaction();
 			$transactions->whereNotDeleted();
-			switch($uploaded->type)
-			{
+			switch($uploaded->type) {
 				case 'CREDIT':
 				case 'DSLIP':
 					$transactions->whereIn('type', array('DSLIP', 'CREDIT'));
@@ -132,16 +115,9 @@ class upload_controller Extends rest_controller
 			$transactions->where('transaction_date >= ', $sd);
 			$transactions->where('transaction_date <= ', $ed);
 			$transactions->where('amount', $uploaded->amount);
-//			if ($uploaded->check_num)
-//			{
-//				$transactions->where('check_num', $uploaded->check_num);
-//			} else {
-//				$transactions->where('check_num IS NULL');
-//			}
 			$transactions->orderBy('transaction_date', 'DESC');
 			$transactions->result();
-			foreach ($transactions as $transaction)
-			{
+			foreach ($transactions as $transaction) {
 				isset($transaction->category);
 				isset($transaction->bank_account);
 			}
@@ -154,10 +130,8 @@ class upload_controller Extends rest_controller
 		$this->ajax->output();
 	}
 
-	public function post()
-	{
-		if ($_SERVER['REQUEST_METHOD'] != 'POST')
-		{
+	public function post() {
+		if ($_SERVER['REQUEST_METHOD'] != 'POST') {
 //			$this->ajax->set_header("Forbidden", '403');
 			$this->ajax->addError(new AjaxError("403 - Forbidden (upload/post)"));
 			$this->ajax->output();
@@ -175,18 +149,17 @@ class upload_controller Extends rest_controller
 		$this->form_validation->set_rules('bank_account_id', 'Bank Account', 'required|interger');
 		$this->form_validation->set_rules('id', 'Uploaded', 'required|interger');
 
-		if ($this->form_validation->ajaxRun('') === FALSE)
-		{
+		if ($this->form_validation->ajaxRun('') === FALSE) {
 			$this->ajax->output();
 		}
 
 		$uploaded = new transaction_upload($_POST['id']);
-		if ($uploaded->numRows())
-		{
+		if ($uploaded->numRows()) {
 			$uploaded->status = (!empty($_POST['id'])) ? 1: 2;			// set uploaded transaction as added as new or overwrite for existing
 			$uploaded->save();
 
-			$transaction = new transaction($_POST['transaction_id']);
+			$transaction_id = (!empty($_POST['transaction_id'])) ? $_POST['transaction_id']: NULL;
+			$transaction = new transaction($transaction_id);
 			$transaction->transaction_date	= date('Y-m-d', strtotime($_POST['transaction_date']));
 			$transaction->description		= $_POST['description'];
 			$transaction->type				= $_POST['type'];
@@ -197,6 +170,10 @@ class upload_controller Extends rest_controller
 			$transaction->bank_account_id	= $_POST['bank_account_id'];
 			$transaction->is_uploaded		= 1;
 			$transaction->save();
+
+			// TODO if transaction is an overwrite of existing then needs a different type of adjust
+			// amount and type are always the same with overwrite but date could change thus changing the balance dates
+			$this->adjustBankBalances($transaction->bank_account_id, $transaction->transaction_date, $transaction->amount, $transaction->type, TRUE);
 		} else {
 			$this->ajax->addError(new AjaxError("403 - Invalid uploaded transaction (upload/post) - " . $_POST['id']));
 		}
@@ -204,25 +181,21 @@ class upload_controller Extends rest_controller
 		$this->ajax->output();
 	}
 
-	public function delete()
-	{
-		if ($_SERVER['REQUEST_METHOD'] != 'GET')
-		{
+	public function delete() {
+		if ($_SERVER['REQUEST_METHOD'] != 'GET') {
 //			$this->ajax->set_header("Forbidden", '403');
 			$this->ajax->addError(new AjaxError("403 - Forbidden (upload/delete)"));
 			$this->ajax->output();
 		}
 
 		$id = $this->input->get('id');
-		if (!is_numeric($id) || $id <= 0)
-		{
+		if (!is_numeric($id) || $id <= 0) {
 			$this->ajax->addError(new AjaxError("Invalid transaction id - (upload/delete) - " . $id));
 			$this->ajax->output();
 		}
 
 		$transaction = new transaction_upload($id);
-		if ($transaction->numRows())
-		{
+		if ($transaction->numRows()) {
 			$transaction->delete();
 		} else {
 			$this->ajax->addError(new AjaxError("Invalid transaction - (upload/delete) - " . $id));
@@ -230,10 +203,8 @@ class upload_controller Extends rest_controller
 		$this->ajax->output();
 	}
 
-	public function counts()
-	{
-		if ($_SERVER['REQUEST_METHOD'] != 'GET')
-		{
+	public function counts() {
+		if ($_SERVER['REQUEST_METHOD'] != 'GET') {
 //			$this->ajax->set_header("Forbidden", '403');
 			$this->ajax->addError(new AjaxError("403 - Forbidden (upload/delete)"));
 			$this->ajax->output();

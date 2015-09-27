@@ -183,6 +183,26 @@ class budget_controller Extends rest_controller
 			$running_total += $account->balance;
 		}
 
+		// get the forecast
+		$forecasted = $this->_loadForecast($categories, $sd, $ed);
+		// now sum the expenses for the forecast intervals
+		$offset = 0;
+		$forecast = array();
+		$xx = 0;
+		while (strtotime($sd . ' +' . $offset . ' ' . $this->budget_interval_unit) < strtotime($ed))
+		{
+			$interval_beginning = date('Y-m-d', strtotime($sd . ' +' . $offset . ' ' . $this->budget_interval_unit));
+			$interval_ending = date('Y-m-d', strtotime($sd . ' +' . ($offset + $this->budget_interval - 1) . ' ' . $this->budget_interval_unit));
+
+			$data = $this->_getForecastByCategory($categories, $forecasted, $interval_beginning);
+			$forecast[$xx]['totals']		= $data['totals'];		// load the category totals
+			$forecast[$xx]['adjustments']	= $data['adjustments'];	// load the bank account balance adjustments
+			$forecast[$xx]['interval_beginning'] = date('c', strtotime($interval_beginning));
+			$forecast[$xx]['interval_ending'] = date('c', strtotime($interval_ending . ' 23:59:59'));
+			$xx++;
+			$offset += $this->budget_interval;
+		}
+
 		$data = array();
 		$data['balance_forward'] = $running_total;
 		$data['interval_total'] = 0;
@@ -191,15 +211,19 @@ class budget_controller Extends rest_controller
 		$output = array();
 		$date_offset = 0;
 
-		if ($transactions->numRows() == 0)
-		{
-			$data['totals'] = $forecast[0]['totals'];
+		// create interval totals with no values
+		$noTotals = array();
+		foreach ($categories as $category) {
+			$noTotals[$category->id] = "0.00";
+		}
+
+		if ($transactions->numRows() == 0) {
+			$data['totals'] = $noTotals;
 			$data['types'] = array();
-			foreach ($data['totals'] as $y => $value)
-			{
-				$data['interval_total'] += $value;
-				if ($value != 0)
-				{
+			$data['interval_total'] = 0;
+			foreach ($forecast[0]['totals'] as $y => $value) {
+//				$data['interval_total'] += $value;
+				if ($value != 0) {
 					$data['types'][$y] = '1';
 				}
 			}
@@ -208,17 +232,6 @@ class budget_controller Extends rest_controller
 			$ied = $this->_getNextDate($isd, $this->budget_interval, $this->budget_interval_unit);
 			$ied = $this->_getNextDate($ied, -1, 'days');												// set the first interval end date
 		} else {
-			// create interval totals with no values
-			$noTotals = array();
-			foreach ($transactions[0] as $label => $value)
-			{
-				if (substr($label, 0, 6) == 'total_')
-				{
-					$index = explode('_', $label);
-					$noTotals[$index[1]] = "0.00";
-				}
-			}
-
 			$isd = $sd;																					// set the first interval start date
 			$ied = $this->_getNextDate($isd, $this->budget_interval, $this->budget_interval_unit);
 			$ied = $this->_getNextDate($ied, -1, 'days');												// set the first interval end date
@@ -297,26 +310,6 @@ class budget_controller Extends rest_controller
 				$output[] = $data;
 			}
 		}
-//print_r($output);die;
-		// get the forecast
-		$forecasted = $this->_loadForecast($categories, $sd, $ed);
-		// now sum the expenses for the forecast intervals
-		$offset = 0;
-		$forecast = array();
-		$xx = 0;
-		while (strtotime($sd . ' +' . $offset . ' ' . $this->budget_interval_unit) < strtotime($ed))
-		{
-			$interval_beginning = date('Y-m-d', strtotime($sd . ' +' . $offset . ' ' . $this->budget_interval_unit));
-			$interval_ending = date('Y-m-d', strtotime($sd . ' +' . ($offset + $this->budget_interval - 1) . ' ' . $this->budget_interval_unit));
-
-			$data = $this->_getForecastByCategory($categories, $forecasted, $interval_beginning);
-			$forecast[$xx]['totals']		= $data['totals'];		// load the category totals
-			$forecast[$xx]['adjustments']	= $data['adjustments'];	// load the bank account balance adjustments
-			$forecast[$xx]['interval_beginning'] = date('c', strtotime($interval_beginning));
-			$forecast[$xx]['interval_ending'] = date('c', strtotime($interval_ending . ' 23:59:59'));
-			$xx++;
-			$offset += $this->budget_interval;
-		}
 
 		$adjustments = array();
 		$balance_forward = FALSE;
@@ -347,6 +340,7 @@ class budget_controller Extends rest_controller
 						}
 					}
 				}
+
 				$interval['adjustments'] = $forecast[$x]['adjustments'];
 				if (empty($interval['running_total'])) {
 					$interval['running_total'] = $running_total;
