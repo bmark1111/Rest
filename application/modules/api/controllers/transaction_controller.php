@@ -106,8 +106,7 @@ class transaction_controller Extends rest_controller
 
 	public function save()
 	{
-		if ($_SERVER['REQUEST_METHOD'] != 'POST')
-		{
+		if ($_SERVER['REQUEST_METHOD'] != 'POST') {
 //			$this->ajax->set_header("Forbidden", '403');
 			$this->ajax->addError(new AjaxError("403 - Forbidden (transaction/save)"));
 			$this->ajax->output();
@@ -125,12 +124,9 @@ class transaction_controller Extends rest_controller
 		$this->form_validation->set_rules('amount', 'Amount', 'callback_isValidAmount');
 
 		// validate split data
-		if (!empty($_POST['splits']))
-		{
-			foreach ($_POST['splits'] as $idx => $split)
-			{
-				if (empty($split['is_deleted']) || $split['is_deleted'] != 1)
-				{
+		if (!empty($_POST['splits'])) {
+			foreach ($_POST['splits'] as $idx => $split) {
+				if (empty($split['is_deleted']) || $split['is_deleted'] != 1) {
 					$this->form_validation->set_rules('splits[' . $idx . '][amount]', 'Split Amount', 'required');
 					$this->form_validation->set_rules('splits[' . $idx . '][type]', 'Split Type', 'required|alpha');
 					$this->form_validation->set_rules('splits[' . $idx . '][category_id]', 'Split Category', 'required|integer');
@@ -138,8 +134,7 @@ class transaction_controller Extends rest_controller
 			}
 		}
 
-		if ($this->form_validation->ajaxRun('') === FALSE)
-		{
+		if ($this->form_validation->ajaxRun('') === FALSE) {
 			$this->ajax->output();
 		}
 
@@ -155,13 +150,10 @@ class transaction_controller Extends rest_controller
 		$transaction->bank_account_id	= $_POST['bank_account_id'];
 		$transaction->save();
 
-		if (!empty($_POST['splits']))
-		{
-			foreach ($_POST['splits'] as $split)
-			{
+		if (!empty($_POST['splits'])) {
+			foreach ($_POST['splits'] as $split) {
 				$transaction_split = new transaction_split($split['id']);
-				if (empty($split['is_deleted']) || $split['is_deleted'] != 1)
-				{
+				if (empty($split['is_deleted']) || $split['is_deleted'] != 1) {
 					$transaction_split->description		= $split['description'];
 					$transaction_split->amount			= $split['amount'];
 					$transaction_split->transaction_id	= $transaction->id;
@@ -318,22 +310,18 @@ class transaction_controller Extends rest_controller
 					}
 				}
 			}
-			if ($split_total != 0)
-			{
+			if ($split_total != 0) {
 				$this->form_validation->set_message('isValidAmount', 'The Split amounts do not match the transaction amount');
 				return FALSE;
 			}
-		}
-		elseif (empty($_POST['amount']) || $_POST['amount'] == 0)
-		{
+		} elseif (empty($_POST['amount']) || $_POST['amount'] == 0) {
 			$this->form_validation->set_message('isValidAmount', 'The Amount Field is Required');
 			return FALSE;
 		}
 		return TRUE;
 	}
 
-	public function delete()
-	{
+	public function delete() {
 		if ($_SERVER['REQUEST_METHOD'] != 'GET')
 		{
 //			$this->ajax->set_header("Forbidden", '403');
@@ -342,78 +330,26 @@ class transaction_controller Extends rest_controller
 		}
 
 		$id = $this->input->get('id');
-		if (!is_numeric($id) || $id <= 0)
-		{
+		if (!is_numeric($id) || $id <= 0) {
 			$this->ajax->addError(new AjaxError("Invalid transaction id - " . $id . " (transaction/delete)"));
 			$this->ajax->output();
 		}
 		
 		$transaction = new transaction($id);
-		if ($transaction->numRows())
-		{
-			if (!empty($transaction->splits))
-			{
-				foreach ($transaction->splits as $split)
-				{
+		if ($transaction->numRows()) {
+			if (!empty($transaction->splits)) {
+				foreach ($transaction->splits as $split) {
 					$split->delete();
 				}
 			}
+			$this->adjustBankBalances($transaction->bank_account_id, $transaction->transaction_date, -$transaction->amount, $transaction->type, TRUE);
+
 			$transaction->delete();
 		} else {
 			$this->ajax->addError(new AjaxError("Invalid transaction - (transaction/delete)"));
 		}
 		$this->ajax->output();
 	}
-
-/*	private function _getEndDay()
-	{
-		$ed = date('z');
-		$xx =  time();
-		$yy = intval(strtotime($this->budget_start_date));
-		$xx = ($xx - $yy) / (24 * 60 * 60);
-		$xx = ceil($xx / $this->budget_interval);
-		return ($xx * $this->budget_interval);
-	}
-*/
-//	private function _getTransactionDesc($description)
-//	{
-//		$transaction_category = new transaction_category();
-//		$transaction_category->whereNotDeleted();
-//		$transaction_category->like('description', $description);
-//		$transaction_category->result();
-//		if ($transaction_category->numRows())
-//		{
-//			$data = array();
-//
-//			foreach ($transaction_category as $category)
-//			{
-//				$data[] = $category->id;
-//			}
-//			return $data;
-//		} else {
-//			return FALSE;
-//		}
-//	}
-
-//	private function _getTransactionAmount($amount)
-//	{
-//		$transaction_category = new transaction_category();
-//		$transaction_category->whereNotDeleted();
-//		$transaction_category->like('amount', $amount);
-//		$transaction_category->result();
-//		if ($transaction_category->numRows())
-//		{
-//			$data = array();
-//
-//			foreach ($transaction_category as $category)
-//			{
-//				$data[] = $category->id;
-//			}
-//			return $data;
-//		} else {
-//			return FALSE;
-//		}
-//	}
 
 }
 

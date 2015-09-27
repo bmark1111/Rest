@@ -17,7 +17,7 @@ class rest_controller Extends EP_Controller {
 	 * $date:	date of adjustment
 	 * $bank_account_id:	id of bank balance to adjust
 	 */
-	protected function adjustBankBalances($bank_account_id, $date, $amount, $type) {
+	protected function adjustBankBalances($bank_account_id, $date, $amount, $type, $delete = FALSE) {
 		// now update the bank_account balances
 		$bank_account_balances = new bank_account_balance();
 		$bank_account_balances->whereNotDeleted();
@@ -37,22 +37,28 @@ class rest_controller Extends EP_Controller {
 					$bank_account_balance->bank_account_id	= $bank_account_id;
 					$bank_account_balance->date				= $date;
 					$bank_account_balance->balance			= $balance->balance;
+//print $bank_account_balance;echo "\n------------------------\n";
 					$bank_account_balance->save();
 				}
-				// calculate the new balance
-				switch($type) {
-					case 'DEBIT':
-					case 'CHECK':
-						$balance->balance -= $amount;
-						break;
-					case 'CREDIT':
-					case 'DSLIP':
-						$balance->balance += $amount;
-						break;
+				if ($delete === FALSE || $balance->date != $date) {
+					// calculate the new balance
+					switch($type) {
+						case 'DEBIT':
+						case 'CHECK':
+							$balance->balance -= $amount;
+							break;
+						case 'CREDIT':
+						case 'DSLIP':
+							$balance->balance += $amount;
+							break;
+					}
+//print $balance;echo "\n++++++++++++++++++++++++\n";
+					$balance->save();
 				}
-				$balance->save();
 			}
+//die('111111');
 		} else {
+//die('222222');
 			// no balance found for date so find closest
 			$bank_account_balance = new bank_account_balance();
 			$bank_account_balance->whereNotDeleted();
