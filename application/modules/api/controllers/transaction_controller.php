@@ -8,11 +8,6 @@ require_once ('rest_controller.php');
 class transaction_controller Extends rest_controller
 {
 	protected $debug = TRUE;
-//	private $budget_mode = FALSE;
-//	private $budget_start_date = FALSE;
-//	private $budget_interval = FALSE;
-//	private $budget_interval_unit = FALSE;
-//	private $budget_views = 6;
 
 	public function __construct()
 	{
@@ -138,8 +133,12 @@ class transaction_controller Extends rest_controller
 			$this->ajax->output();
 		}
 
-		$id = (!empty($_POST['id'])) ? $_POST['id']: NULL;
+		$id = (!empty($_POST['id'])) ? $_POST['id']: FALSE;
 		$transaction = new transaction($id);
+		$bank_account_id	= (!empty($transaction->bank_account_id)) ? $transaction->bank_account_id: FALSE;
+		$transaction_date	= (!empty($transaction->transaction_date)) ? $transaction->transaction_date: FALSE;
+		$amount				= (!empty($transaction->amount)) ? $transaction->amount: FALSE;
+		$type				= (!empty($transaction->type)) ? $transaction->type: FALSE;
 		$transaction->transaction_date	= date('Y-m-d', strtotime($_POST['transaction_date']));
 		$transaction->description		= $_POST['description'];
 		$transaction->type				= $_POST['type'];
@@ -167,7 +166,18 @@ class transaction_controller Extends rest_controller
 			}
 		}
 
-		$this->adjustBankBalances($transaction->bank_account_id, $transaction->transaction_date, $transaction->amount, $transaction->type);
+//		if ($id !== FALSE && $amount !== FALSE) {
+//			// deduct amount from bank account balance
+//echo "bank_account_id = $bank_account_id\n";
+//echo "transaction_date = $transaction_date\n";
+//echo "amount = $amount\n";
+//echo "type = $type\n";
+////die('222222');
+//			$this->adjustBankBalances($bank_account_id, $transaction_date, -$amount, $type, TRUE);
+//		}
+//die('111111');
+//		// add new amount to bank account balance
+//		$this->adjustBankBalances($transaction->bank_account_id, $transaction->transaction_date, $transaction->amount, $transaction->type);
 /*		// now update the bank_account balances
 		$bank_account_balances = new bank_account_balance();
 		$bank_account_balances->whereNotDeleted();
@@ -342,7 +352,7 @@ class transaction_controller Extends rest_controller
 					$split->delete();
 				}
 			}
-			$this->adjustBankBalances($transaction->bank_account_id, $transaction->transaction_date, -$transaction->amount, $transaction->type, TRUE);
+//			$this->adjustBankBalances($transaction->bank_account_id, $transaction->transaction_date, -$transaction->amount, $transaction->type, TRUE);
 
 			$transaction->delete();
 		} else {

@@ -158,8 +158,12 @@ class upload_controller Extends rest_controller
 			$uploaded->status = (!empty($_POST['id'])) ? 1: 2;			// set uploaded transaction as added as new or overwrite for existing
 			$uploaded->save();
 
-			$transaction_id = (!empty($_POST['transaction_id'])) ? $_POST['transaction_id']: NULL;
+			$transaction_id = (!empty($_POST['transaction_id'])) ? $_POST['transaction_id']: FALSE;
 			$transaction = new transaction($transaction_id);
+			$bank_account_id	= (!empty($transaction->bank_account_id)) ? $transaction->bank_account_id: FALSE;
+			$transaction_date	= (!empty($transaction->transaction_date)) ? $transaction->transaction_date: FALSE;
+			$amount				= (!empty($transaction->amount)) ? $transaction->amount: FALSE;
+			$type				= (!empty($transaction->type)) ? $transaction->type: FALSE;
 			$transaction->transaction_date	= date('Y-m-d', strtotime($_POST['transaction_date']));
 			$transaction->description		= $_POST['description'];
 			$transaction->type				= $_POST['type'];
@@ -171,9 +175,14 @@ class upload_controller Extends rest_controller
 			$transaction->is_uploaded		= 1;
 			$transaction->save();
 
-			// TODO if transaction is an overwrite of existing then needs a different type of adjust
-			// amount and type are always the same with overwrite but date could change thus changing the balance dates
-			$this->adjustBankBalances($transaction->bank_account_id, $transaction->transaction_date, $transaction->amount, $transaction->type, TRUE);
+//			// TODO if transaction is an overwrite of existing then needs a different type of adjust
+//			// amount and type are always the same with overwrite but date could change thus changing the balance dates
+//			if ($transaction_id !== FALSE && $amount !== FALSE) {
+//				// deduct amount from bank account balance
+//				$this->adjustBankBalances($bank_account_id, $transaction_date, -$amount, $type, TRUE);
+//			}
+//			// add new amount to bank account balance
+//			$this->adjustBankBalances($transaction->bank_account_id, $transaction->transaction_date, $transaction->amount, $transaction->type);
 		} else {
 			$this->ajax->addError(new AjaxError("403 - Invalid uploaded transaction (upload/post) - " . $_POST['id']));
 		}

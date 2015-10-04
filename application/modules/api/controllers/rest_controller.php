@@ -37,10 +37,10 @@ class rest_controller Extends EP_Controller {
 					$bank_account_balance->bank_account_id	= $bank_account_id;
 					$bank_account_balance->date				= $date;
 					$bank_account_balance->balance			= $balance->balance;
-//print $bank_account_balance;echo "\n------------------------\n";
-					$bank_account_balance->save();
+print $bank_account_balance;echo "\n------------------------\n";
+//					$bank_account_balance->save();
 				}
-				if ($delete === FALSE || $balance->date != $date) {
+//				if ($delete === FALSE || $balance->date != $date) {
 					// calculate the new balance
 					switch($type) {
 						case 'DEBIT':
@@ -52,13 +52,13 @@ class rest_controller Extends EP_Controller {
 							$balance->balance += $amount;
 							break;
 					}
-//print $balance;echo "\n++++++++++++++++++++++++\n";
-					$balance->save();
-				}
+print $balance;echo "\n++++++++++++++++++++++++\n";
+//					$balance->save();
+//				}
 			}
-//die('111111');
+die('111111');
 		} else {
-//die('222222');
+die('222222');
 			// no balance found for date so find closest
 			$bank_account_balance = new bank_account_balance();
 			$bank_account_balance->whereNotDeleted();
