@@ -53,11 +53,6 @@ class rest_controller Extends EP_Controller {
 	 * $new_transaction_date:		new transaction date
 	 */
 	protected function adjustBankBalances($original_transaction_date, $new_transaction_date) {
-//	SELECT MAX(transaction_date) AS date
-//	FROM (`transaction`)
-//	WHERE `is_deleted` = 0
-//	AND transaction_date < '2015-10-01'
-//	LIMIT 1
 		// get the date from which to reset the bank account balance
 		$transaction = new transaction();
 		$transaction->select('MAX(transaction_date) AS date');
@@ -68,9 +63,7 @@ class rest_controller Extends EP_Controller {
 		$transaction->where("transaction_date < '" . $new_transaction_date . "'", NULL, FALSE);
 		$transaction->limit(1);
 		$transaction->row();
-//echo $transaction->lastQuery()."\n";
-//print $transaction;
-//die;
+
 		if ($transaction->date) {
 			// now get the transactions that need the balance to be reset
 			$transactions = new transaction();
@@ -105,9 +98,29 @@ class rest_controller Extends EP_Controller {
 				}
 			}
 		}
-//die('xxxxxxxxxxxxxxxxxxxxxxx');
 	}
 
+	/*
+	 * sd = we need the first available balance before this date
+	 * bank_account_id = bank account id
+	 */
+	protected function getBankAccountBalance($sd, $bank_account_id) {
+		$transaction = new transaction();
+		$transaction->whereNotDeleted();
+		$transaction->where("transaction_date < '" . $sd . "'", NULL, FALSE);
+		$transaction->where('bank_account_id', $bank_account_id);
+		$transaction->orderBy('transaction_date', 'DESC');
+		$transaction->limit(1);
+		$transaction->row();
+//echo $transaction->lastQuery()."\n";
+//print $transaction;die;
+		if ($transaction->numRows()) {
+			return $transaction->bank_account_balance;
+		} else {
+			// TODO may need to return the bank account balance from the bank account table
+			return 0;
+		}
+	}
 }
 
 // EOF

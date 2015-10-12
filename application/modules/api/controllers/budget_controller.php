@@ -348,13 +348,10 @@ class budget_controller Extends rest_controller {
 				}
 			}
 		}
+
 		// get the current bank balances
 		$balances = $this->_balances($sd);
-//print $balances;die;
-//[bank_account_id] => 1
-//[bank_account_balance] => -1393.82
-//[transaction_date] => 2015-09-08
-//[name] => Premier
+
 		// now put the bank balances in for each interval
 		foreach ($output as $x => $intervalx) {
 			// find the latest balance for this interval
@@ -368,13 +365,14 @@ class budget_controller Extends rest_controller {
 						// if the bank balance is not set then get from last interval
 						$output[$x]['accounts'][$balance->bank_account_id]['balance'] = $output[$x-1]['balances'][$balance->bank_account_id];
 					} else {
-						// this is frist interval, set bank balacne to zero if not present
-						$output[$x]['accounts'][$balance->bank_account_id]['balance'] = 0;
+						// this is first interval, get the first available bank balance for this account
+						$output[$x]['accounts'][$balance->bank_account_id]['balance'] = $this->getBankAccountBalance($sd, $balance->bank_account_id);
 					}
 				}
 				// save balance unadjusted for next interval (if  not set)
 				$output[$x]['balances'][$balance->bank_account_id] = $output[$x]['accounts'][$balance->bank_account_id]['balance'];
 			}
+
 			// now adjust the bank accounts with the forecasted adjustments
 			foreach ($output[$x]['accounts'] as $bank_account_id => $account) {
 				$sd = strtotime($intervalx['interval_beginning']);
@@ -430,13 +428,6 @@ class budget_controller Extends rest_controller {
 		$bank_account_balances->where('transaction.is_deleted', 0);
 		$bank_account_balances->orderBy('transaction.transaction_date', 'ASC');
 		$bank_account_balances->orderBy('transaction.id', 'ASC');
-		
-//		$bank_account_balances = new bank_account_balance();
-//		$bank_account_balances->select('bank_account_balance.bank_account_id, bank_account_balance.balance, bank_account_balance.date, bank_account.name');
-//		$bank_account_balances->join('bank_account', 'bank_account.id = bank_account_balance.bank_account_id');
-//		$bank_account_balances->where('bank_account_balance.is_deleted', 0);
-//		$bank_account_balances->orderBy('bank_account_balance.date');
-//		$bank_account_balances->orderBy('bank_account_balance.bank_account_id');
 		$bank_account_balances->result();
 //echo $bank_account_balances->lastQuery();
 //print $bank_account_balances;
