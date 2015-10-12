@@ -207,7 +207,6 @@ class budget_controller Extends rest_controller {
 			$data['types'] = array();
 			$data['interval_total'] = 0;
 			foreach ($forecast[0]['totals'] as $y => $value) {
-//				$data['interval_total'] += $value;
 				if ($value != 0) {
 					$data['types'][$y] = '1';
 				}
@@ -273,7 +272,7 @@ class budget_controller Extends rest_controller {
 		$output[] = $data;
 
 		if ($interval == 0) {
-			// show budgetviews * 2 intervals in the initial load
+			// show budget views * 2 intervals in the initial load
 			while (count($output) < ($this->budget_views * 2)) {		// show 12 intervals
 				foreach ($data['totals'] as &$total) {
 					$total = 0;
@@ -299,33 +298,34 @@ class budget_controller Extends rest_controller {
 		$adjustments = array();
 		$balance_forward = FALSE;
 		$running_total = 0;
+
 		// now add the forecast to relevant intervals
 		foreach ($output as $x => &$interval) {
 			$start_date = strtotime($interval['interval_beginning']);
 			$end_date = strtotime($interval['interval_ending']);
 			$now = time();
-			// only add forecast into intervals from current into future
+			// only add forecast from current interval through future intervals
 			if (($now >= $start_date && $now <= $end_date) || $now < $end_date) {
 				if ($balance_forward) {
 					$interval['balance_forward'] = $balance_forward;
 				}
 				// check to see what current values need to be from the forecast
 				foreach ($interval['totals'] as $y => $intervalAmount) {
-					if ($intervalAmount == 0 && $forecast[$x]['totals'][$y] != 0)
+					if ($intervalAmount == 0 && $forecast[$x]['totals'][$y] !== 0)
 					{	// if interval amount is zero and the forecast has a value then ... use the forecasted amount
 						$interval['totals'][$y] = floatval($forecast[$x]['totals'][$y]);			// use the forcasted amount
 						$interval['types'][$y] = '1';												// flag this as a forecast total
 						$interval['interval_total'] += floatval($forecast[$x]['totals'][$y]);		// update the interval total
 						$running_total += floatval($forecast[$x]['totals'][$y]);					// update the running total
-					} else if ($forecast[$x]['totals'][$y] != 0) {
+					} else if ($forecast[$x]['totals'][$y] !== 0) {
 						// we are not using this forecasted amount so deduct it from the forecasted account balance adjustment
 						// need to deduct the forecast amount from the account balance adjustment
 						foreach ($forecast[$x]['adjustments'][$y] as $bank_account_id => $bank_account_balance) {
-							$forecast[$x]['adjustments'][$y][$bank_account_id] -= floatval($forecast[$x]['totals'][$y]);
+//							$forecast[$x]['adjustments'][$y][$bank_account_id] -= floatval($forecast[$x]['totals'][$y]);
+							$forecast[$x]['adjustments'][$y][$bank_account_id] = 0;
 						}
 					}
 				}
-
 				$interval['adjustments'] = $forecast[$x]['adjustments'];
 				if (empty($interval['running_total'])) {
 					$interval['running_total'] = $running_total;
