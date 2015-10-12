@@ -5,26 +5,22 @@
 
 require_once ('rest_controller.php');
 
-class transaction_controller Extends rest_controller
-{
+class transaction_controller Extends rest_controller {
+
 	protected $debug = TRUE;
 
-	public function __construct()
-	{
+	public function __construct() {
 		parent::__construct();
 	}
 
-	public function index()
-	{
+	public function index() {
 //		$this->ajax->set_header("Forbidden", '403');
 		$this->ajax->addError(new AjaxError("403 - Forbidden (transaction/index)"));
 		$this->ajax->output();
 	}
 
-	public function loadAll()
-	{
-		if ($_SERVER['REQUEST_METHOD'] != 'GET')
-		{
+	public function loadAll() {
+		if ($_SERVER['REQUEST_METHOD'] != 'GET') {
 //			$this->ajax->set_header("Forbidden", '403');
 			$this->ajax->addError(new AjaxError("403 - Forbidden (transaction/loadAll)"));
 			$this->ajax->output();
@@ -41,17 +37,14 @@ class transaction_controller Extends rest_controller
 		$sort_dir			= (!empty($params['sort_dir']) && $params['sort_dir'] == 'DESC') ? 'DESC': 'ASC';
 
 		$transactions = new transaction();
-		if ($date)
-		{
+		if ($date) {
 			$date = date('Y-m-d', strtotime($date));
 			$transactions->where('transaction.transaction_date', $date);
 		}
-		if ($description)
-		{
+		if ($description) {
 			$transactions->like('description', $description);
 		}
-		if ($amount)
-		{
+		if ($amount) {
 			$transactions->where('amount', $amount);
 		}
 		$transactions->select('SQL_CALC_FOUND_ROWS *', FALSE);
@@ -62,10 +55,8 @@ class transaction_controller Extends rest_controller
 
 		$this->ajax->setData('total_rows', $transactions->foundRows());
 
-		if ($transactions->numRows())
-		{
-			foreach ($transactions as $transaction)
-			{
+		if ($transactions->numRows()) {
+			foreach ($transactions as $transaction) {
 				isset($transaction->category);
 			}
 			$this->ajax->setData('result', $transactions);
@@ -75,18 +66,15 @@ class transaction_controller Extends rest_controller
 		$this->ajax->output();
 	}
 
-	public function edit()
-	{
-		if ($_SERVER['REQUEST_METHOD'] != 'GET')
-		{
+	public function edit() {
+		if ($_SERVER['REQUEST_METHOD'] != 'GET') {
 //			$this->ajax->set_header("Forbidden", '403');
 			$this->ajax->addError(new AjaxError("403 - Forbidden (transaction/edit)"));
 			$this->ajax->output();
 		}
 
 		$id = $this->input->get('id');
-		if (!is_numeric($id) || $id <= 0)
-		{
+		if (!is_numeric($id) || $id <= 0) {
 			$this->ajax->addError(new AjaxError("Invalid transaction id - " . $id . " (transaction/edit)"));
 			$this->ajax->output();
 		}
@@ -99,8 +87,7 @@ class transaction_controller Extends rest_controller
 		$this->ajax->output();
 	}
 
-	public function save()
-	{
+	public function save() {
 		if ($_SERVER['REQUEST_METHOD'] != 'POST') {
 //			$this->ajax->set_header("Forbidden", '403');
 			$this->ajax->addError(new AjaxError("403 - Forbidden (transaction/save)"));
@@ -166,115 +153,26 @@ class transaction_controller Extends rest_controller
 			}
 		}
 
-//		if ($id !== FALSE && $amount !== FALSE) {
-//			// deduct amount from bank account balance
-//echo "bank_account_id = $bank_account_id\n";
-//echo "transaction_date = $transaction_date\n";
-//echo "amount = $amount\n";
-//echo "type = $type\n";
-////die('222222');
-//			$this->adjustBankBalances($bank_account_id, $transaction_date, -$amount, $type, TRUE);
-//		}
-//die('111111');
-//		// add new amount to bank account balance
-//		$this->adjustBankBalances($transaction->bank_account_id, $transaction->transaction_date, $transaction->amount, $transaction->type);
-/*		// now update the bank_account balances
-		$bank_account_balances = new bank_account_balance();
-		$bank_account_balances->whereNotDeleted();
-		$bank_account_balances->where('date >= ', $transaction->transaction_date);
-		$bank_account_balances->where('bank_account_id', $transaction->bank_account_id);
-		$bank_account_balances->orderBy('date', 'ASC');
-		$bank_account_balances->result();
-//echo $bank_account_balances->lastQuery()."\n";
-//print $bank_account_balances;
-//die;
-		if ($bank_account_balances->numRows()) {
-			// found balances so update them
-			$foundThisDate = FALSE;		// flags if we have found a balance record for the exact transaction date
-			$bank_account_balance = FALSE;
-			foreach ($bank_account_balances as $balance) {
-				if ($balance->date == $transaction->transaction_date) {
-					$foundThisDate = TRUE;	// we found a balance record for this transaction date exactly and updated it
-				} elseif ($balance->date > $transaction->transaction_date && !$foundThisDate && $bank_account_balance === FALSE) {
-					$bank_account_balance = new bank_account_balance();
-					$bank_account_balance->bank_account_id	= $transaction->bank_account_id;
-					$bank_account_balance->date				= $transaction->transaction_date;
-					$bank_account_balance->balance			= $balance->balance;
-					$bank_account_balance->save();
-				}
-				// calculate the new balance
-				switch($transaction->type) {
-					case 'DEBIT':
-					case 'CHECK':
-						$balance->balance -= $transaction->amount;
-						break;
-					case 'CREDIT':
-					case 'DSLIP':
-						$balance->balance += $transaction->amount;
-						break;
-				}
-				$balance->save();
-			}
-		} else {
-			// no balance found for date so find closest
-			$bank_account_balance = new bank_account_balance();
-			$bank_account_balance->whereNotDeleted();
-			$bank_account_balance->select('bank_account_balance.*,MAX(date)');
-			$bank_account_balance->where('bank_account_id', $transaction->bank_account_id);
-			$bank_account_balance->row();
-			if ($bank_account_balance->numRows()) {
-				// found a close balance so create new record for this transaction date
-				unset($bank_account_balance->id);	// this will ensure a new row is created
-				$bank_account_balance->date = $transaction->transaction_date;
-				switch($transaction->type) {
-					case 'DEBIT':
-					case 'CHECK':
-						$bank_account_balance->balance -= $transaction->amount;
-						break;
-					case 'CREDIT':
-					case 'DSLIP':
-						$bank_account_balance->balance += $transaction->amount;
-						break;
-				}
-				$bank_account_balance->save();
-			} else {
-				// no balance record found so create a new record
-				// get the opening account balance and create a new account balance amount
-				$bank_account = new bank_account($transaction->bank_account_id);
-				$amount = $bank_account->amount;
-				switch($transaction->type) {
-					case 'DEBIT':
-					case 'CHECK':
-						$amount -= $transaction->amount;
-						break;
-					case 'CREDIT':
-					case 'DSLIP':
-						$amount += $transaction->amount;
-						break;
-				}
-
-				$bank_account_balance = new bank_account_balance();
-				$bank_account_balance->bank_account_id	= $transaction->bank_account_id;
-				$bank_account_balance->date				= $transaction->transaction_date;
-				$bank_account_balance->balance			= $amount;
-				$bank_account_balance->save();
-			}
+		/*
+		 * if the transaction will affect the balances then adjust them
+		 */
+		if ($amount !== $transaction->amount || $transaction_date !== $transaction->transaction_date || $type !== $transaction->type  || $bank_account_id !== $transaction->bank_account_id) {
+			// if the amount or date or type or bank account changed then reset account balances
+			$this->adjustBankBalances($transaction_date, $transaction->transaction_date);
 		}
-*/
+
 		$this->ajax->output();
 	}
 
 	/*
 	 * Checks is splits are entered, if not main category is a required field
 	 */
-	public function isValidCategory()
-	{
+	public function isValidCategory() {
 		$input = file_get_contents('php://input');
 		$_POST = json_decode($input, TRUE);
 
 		// if no splits then category is required otherwise MUST be NULL (will be ignored in Save)
-		if (empty($_POST['splits']) && empty($_POST['category_id']))
-		{
+		if (empty($_POST['splits']) && empty($_POST['category_id'])) {
 			$this->form_validation->set_message('isValidCategory', 'The Category Field is Required');
 			return FALSE;
 		}
@@ -285,24 +183,18 @@ class transaction_controller Extends rest_controller
 	 * Checks if splits are entered, if not main amount is required
 	 *								if it is then checks that split amounts equal transaction amount
 	 */
-	public function isValidAmount()
-	{
+	public function isValidAmount() {
 		$input = file_get_contents('php://input');
 		$_POST = json_decode($input, TRUE);
 
-		if (!empty($_POST['splits']))
-		{
+		if (!empty($_POST['splits'])) {
 			$split_total = floatval($_POST['amount']);
-			foreach ($_POST['splits'] as $split)
-			{
-				if (empty($split['is_deleted']) || $split['is_deleted'] != '1')
-				{
-					switch ($split['type'])
-					{
+			foreach ($_POST['splits'] as $split) {
+				if (empty($split['is_deleted']) || $split['is_deleted'] != '1') {
+					switch ($split['type']) {
 						case 'DEBIT':
 						case 'CHECK':
-							if ($_POST['type'] == 'DEBIT' || $_POST['type'] == 'CHECK')
-							{
+							if ($_POST['type'] == 'DEBIT' || $_POST['type'] == 'CHECK') {
 								$split_total -= floatval($split['amount']);
 							} else {
 								$split_total += floatval($split['amount']);
@@ -310,8 +202,7 @@ class transaction_controller Extends rest_controller
 							break;
 						case 'CREDIT':
 						case 'DSLIP':
-							if ($_POST['type'] == 'CREDIT' || $_POST['type'] == 'DSLIP')
-							{
+							if ($_POST['type'] == 'CREDIT' || $_POST['type'] == 'DSLIP') {
 								$split_total -= floatval($split['amount']);
 							} else {
 								$split_total += floatval($split['amount']);
@@ -332,8 +223,7 @@ class transaction_controller Extends rest_controller
 	}
 
 	public function delete() {
-		if ($_SERVER['REQUEST_METHOD'] != 'GET')
-		{
+		if ($_SERVER['REQUEST_METHOD'] != 'GET') {
 //			$this->ajax->set_header("Forbidden", '403');
 			$this->ajax->addError(new AjaxError("403 - Forbidden (transaction/delete)"));
 			$this->ajax->output();

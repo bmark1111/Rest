@@ -9,100 +9,103 @@ class rest_controller Extends EP_Controller {
 
 	public function __construct() {
 		parent::__construct();
+//$this->_balanceUpdate();				// resets all bank balances
+//die('XXXXXXXXXXXXXXXXXXXXXXXXXXXXx');
+	}
+
+	private function _balanceUpdate() {
+		$bank_account_balances = array();
+		$bank_accounts = new bank_account();
+		$bank_accounts->result();
+		if ($bank_accounts->numRows()) {
+			foreach ($bank_accounts as $bank_account) {
+				$bank_account_balances[$bank_account->id] = $bank_account->balance;
+			}
+			$transactions = new transaction();
+			$transactions->whereNotDeleted();
+			$transactions->orderBy('transaction_date', 'ASC');
+			$transactions->orderBy('id', 'ASC');
+			$transactions->result();
+			if ($transactions->numRows()) {
+				foreach ($transactions as $transaction) {
+					$amount = 0;
+					switch ($transaction->type) {
+						case 'DEBIT':
+						case 'CHECK':
+							$amount -= $transaction->amount;
+							break;
+						case 'CREDIT':
+						case 'DSLIP':
+							$amount += $transaction->amount;
+							break;
+					}
+					$bank_account_balances[$transaction->bank_account_id] += $amount;
+					$transaction->bank_account_balance = $bank_account_balances[$transaction->bank_account_id];
+					$transaction->save();
+				}
+			}
+		}
 	}
 
 	/*
 	 * adjustBankBalances
-	 * $amount:	amount to adjust
-	 * $date:	date of adjustment
-	 * $bank_account_id:	id of bank balance to adjust
+	 * $original_transaction_date:	original transaction date if it exists
+	 * $new_transaction_date:		new transaction date
 	 */
-	protected function adjustBankBalances($bank_account_id, $date, $amount, $type, $delete = FALSE) {
-		// now update the bank_account balances
-		$bank_account_balances = new bank_account_balance();
-		$bank_account_balances->whereNotDeleted();
-		$bank_account_balances->where('date >= ', $date);
-		$bank_account_balances->where('bank_account_id', $bank_account_id);
-		$bank_account_balances->orderBy('date', 'ASC');
-		$bank_account_balances->result();
-		if ($bank_account_balances->numRows()) {
-			// found balances so update them
-			$foundThisDate = FALSE;		// flags if we have found a balance record for the exact date
-			$bank_account_balance = FALSE;
-			foreach ($bank_account_balances as $balance) {
-				if ($balance->date == $date) {
-					$foundThisDate = TRUE;	// we found a balance record for this date exactly and updated it
-				} elseif ($balance->date > $date && !$foundThisDate && $bank_account_balance === FALSE) {
-					$bank_account_balance = new bank_account_balance();
-					$bank_account_balance->bank_account_id	= $bank_account_id;
-					$bank_account_balance->date				= $date;
-					$bank_account_balance->balance			= $balance->balance;
-print $bank_account_balance;echo "\n------------------------\n";
-//					$bank_account_balance->save();
-				}
-//				if ($delete === FALSE || $balance->date != $date) {
-					// calculate the new balance
-					switch($type) {
-						case 'DEBIT':
-						case 'CHECK':
-							$balance->balance -= $amount;
-							break;
-						case 'CREDIT':
-						case 'DSLIP':
-							$balance->balance += $amount;
-							break;
+	protected function adjustBankBalances($original_transaction_date, $new_transaction_date) {
+//	SELECT MAX(transaction_date) AS date
+//	FROM (`transaction`)
+//	WHERE `is_deleted` = 0
+//	AND transaction_date < '2015-10-01'
+//	LIMIT 1
+		// get the date from which to reset the bank account balance
+		$transaction = new transaction();
+		$transaction->select('MAX(transaction_date) AS date');
+		$transaction->whereNotDeleted();
+		if ($original_transaction_date) {
+			$transaction->where("transaction_date < '" . $original_transaction_date . "'", NULL, FALSE);
+		}
+		$transaction->where("transaction_date < '" . $new_transaction_date . "'", NULL, FALSE);
+		$transaction->limit(1);
+		$transaction->row();
+//echo $transaction->lastQuery()."\n";
+//print $transaction;
+//die;
+		if ($transaction->date) {
+			// now get the transactions that need the balance to be reset
+			$transactions = new transaction();
+			$transactions->whereNotDeleted();
+			$transactions->where("transaction_date >= '" . $transaction->date . "'", NULL, FALSE);
+			$transactions->orderBy('transaction_date', 'ASC');
+			$transactions->orderBy('id', 'ASC');
+			$transactions->result();
+//echo $transactions->lastQuery()."\n";
+//print $transactions;
+			if ($transactions->numRows()) {
+				$first = TRUE;
+				foreach ($transactions as $transaction) {
+					if (!$first || empty($transaction->bank_account_balance)) {
+						$first = FALSE;
+						switch ($transaction->type) {
+							case 'DEBIT':
+							case 'CHECK':
+								$bank_account_balances[$transaction->bank_account_id] -= $transaction->amount;
+								break;
+							case 'CREDIT':
+							case 'DSLIP':
+								$bank_account_balances[$transaction->bank_account_id] += $transaction->amount;
+								break;
+						}
+						$transaction->bank_account_balance = $bank_account_balances[$transaction->bank_account_id];
+//print $transaction;
+						$transaction->save();
+					} else {
+						$bank_account_balances[$transaction->bank_account_id] = $transaction->bank_account_balance;
 					}
-print $balance;echo "\n++++++++++++++++++++++++\n";
-//					$balance->save();
-//				}
-			}
-die('111111');
-		} else {
-die('222222');
-			// no balance found for date so find closest
-			$bank_account_balance = new bank_account_balance();
-			$bank_account_balance->whereNotDeleted();
-			$bank_account_balance->select('bank_account_balance.*,MAX(date)');
-			$bank_account_balance->where('bank_account_id', $bank_account_id);
-			$bank_account_balance->row();
-			if ($bank_account_balance->numRows()) {
-				// found a close balance so create new record for this date
-				unset($bank_account_balance->id);	// this will ensure a new row is created
-				$bank_account_balance->date = $date;
-				switch($type) {
-					case 'DEBIT':
-					case 'CHECK':
-						$bank_account_balance->balance -= $amount;
-						break;
-					case 'CREDIT':
-					case 'DSLIP':
-						$bank_account_balance->balance += $amount;
-						break;
 				}
-				$bank_account_balance->save();
-			} else {
-				// no balance record found so create a new record
-				// get the opening account balance and create a new account balance amount
-				$bank_account = new bank_account($bank_account_id);
-				$amount = $bank_account->amount;
-				switch($type) {
-					case 'DEBIT':
-					case 'CHECK':
-						$balance -= $amount;
-						break;
-					case 'CREDIT':
-					case 'DSLIP':
-						$balance += $amount;
-						break;
-				}
-
-				$bank_account_balance = new bank_account_balance();
-				$bank_account_balance->bank_account_id	= $bank_account_id;
-				$bank_account_balance->date				= $date;
-				$bank_account_balance->balance			= $balance;
-				$bank_account_balance->save();
 			}
 		}
+//die('xxxxxxxxxxxxxxxxxxxxxxx');
 	}
 
 }

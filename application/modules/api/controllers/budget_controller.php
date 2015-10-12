@@ -5,8 +5,8 @@
 
 require_once ('rest_controller.php');
 
-class budget_controller Extends rest_controller
-{
+class budget_controller Extends rest_controller {
+
 	protected $debug = TRUE;
 	private $budget_mode = FALSE;
 	private $budget_start_date = FALSE;
@@ -14,15 +14,13 @@ class budget_controller Extends rest_controller
 	private $budget_interval_unit = FALSE;
 	private $budget_views = 6;
 
-	public function __construct()
-	{
+	public function __construct() {
 		parent::__construct();
 
 		$config = new configuration();
 		$config->getBy('name', 'budget_mode');
 		$this->budget_mode  = $config->value;
-		switch ($this->budget_mode)
-		{
+		switch ($this->budget_mode) {
 			case 'weekly':
 				$this->budget_interval = 7;
 				$this->budget_interval_unit = 'Days';
@@ -50,17 +48,14 @@ class budget_controller Extends rest_controller
 		$this->budget_views = 6;						// TODO: this should be passed in to accomodate more budget intervals
 	}
 
-	public function index()
-	{
+	public function index() {
 //		$this->ajax->set_header("Forbidden", '403');
 		$this->ajax->addError(new AjaxError("403 - Forbidden (budget/index)"));
 		$this->ajax->output();
 	}
 
-	public function load()
-	{
-		if ($_SERVER['REQUEST_METHOD'] != 'GET')
-		{
+	public function load() {
+		if ($_SERVER['REQUEST_METHOD'] != 'GET') {
 //			$this->ajax->set_header("Forbidden", '403');
 			$this->ajax->addError(new AjaxError("403 - Forbidden (budget/load)"));
 			$this->ajax->output();
@@ -72,16 +67,14 @@ class budget_controller Extends rest_controller
 		$categories->result();
 
 		$interval = $this->input->get('interval');
-		if (!is_numeric($interval))
-		{
+		if (!is_numeric($interval)) {
 			$this->ajax->addError(new AjaxError("Invalid interval - budget/load"));
 			$this->ajax->output();
 		}
 
 		$select = array();
 		$select[] = "T.transaction_date";
-		foreach ($categories as $category)
-		{
+		foreach ($categories as $category) {
 			$select[] = "SUM(CASE WHEN T.category_id = " . $category->id . " AND T.type = 'CREDIT' THEN T.amount ELSE 0 END)" .
 						" + SUM(CASE WHEN T.category_id = " . $category->id . " AND T.type = 'DSLIP' THEN T.amount ELSE 0 END)" .
 						" - SUM(CASE WHEN T.category_id = " . $category->id . " AND T.type = 'CHECK' THEN T.amount ELSE 0 END)" .
@@ -99,24 +92,18 @@ class budget_controller Extends rest_controller
 		$sql[] = "FROM transaction T";
 		$sql[] = "LEFT JOIN transaction_split TS ON TS.transaction_id = T.id AND TS.is_deleted = 0";
 
-		switch ($this->budget_mode)
-		{
+		switch ($this->budget_mode) {
 			case 'weekly':
 				$offset = $this->_getEndDay();
 //				$start_day = ($offset - ($this->budget_interval * ($this->budget_views - $interval)));		// - 'budget_views' entries and adjust for interval
 //				$end_day = ($offset + ($this->budget_interval * ($this->budget_views + $interval)));		// + 'budget_views' entries and adjust for interval
-				if ($interval == 0)
-				{
+				if ($interval == 0) {
 					$start_day = ($offset - ($this->budget_interval * $this->budget_views));					// - 'budget_views' entries and adjust for interval
 					$end_day = ($offset + ($this->budget_interval * $this->budget_views));						// + 'budget_views' entries and adjust for interval
-				}
-				else if ($interval < 0)
-				{
+				} else if ($interval < 0) {
 					$start_day = ($offset + ($this->budget_interval * ($interval - $this->budget_views)));		// - 'budget_views' entries and adjust for interval
 					$end_day = ($offset + ($this->budget_interval * ($interval - $this->budget_views + 1)));	// + 'budget_views' entries and adjust for interval
-				}
-				else if ($interval > 0)
-				{
+				} else if ($interval > 0) {
 					$start_day = ($offset + ($this->budget_interval * ($interval + $this->budget_views - 1)));	// - 'budget_views' entries and adjust for interval
 					$end_day = ($offset + ($this->budget_interval * ($interval + $this->budget_views)) - 1);	// + 'budget_views' entries and adjust for interval
 				}
@@ -178,8 +165,7 @@ class budget_controller Extends rest_controller
 		$accounts->whereNotDeleted();
 		$accounts->result();
 
-		foreach ($accounts as $account)
-		{
+		foreach ($accounts as $account) {
 			$running_total += $account->balance;
 		}
 
@@ -189,8 +175,7 @@ class budget_controller Extends rest_controller
 		$offset = 0;
 		$forecast = array();
 		$xx = 0;
-		while (strtotime($sd . ' +' . $offset . ' ' . $this->budget_interval_unit) < strtotime($ed))
-		{
+		while (strtotime($sd . ' +' . $offset . ' ' . $this->budget_interval_unit) < strtotime($ed)) {
 			$interval_beginning = date('Y-m-d', strtotime($sd . ' +' . $offset . ' ' . $this->budget_interval_unit));
 			$interval_ending = date('Y-m-d', strtotime($sd . ' +' . ($offset + $this->budget_interval - 1) . ' ' . $this->budget_interval_unit));
 
@@ -316,11 +301,11 @@ class budget_controller Extends rest_controller
 		$running_total = 0;
 		// now add the forecast to relevant intervals
 		foreach ($output as $x => &$interval) {
-			$sd = strtotime($interval['interval_beginning']);
-			$ed = strtotime($interval['interval_ending']);
+			$start_date = strtotime($interval['interval_beginning']);
+			$end_date = strtotime($interval['interval_ending']);
 			$now = time();
 			// only add forecast into intervals from current into future
-			if (($now >= $sd && $now <= $ed) || $now < $ed) {
+			if (($now >= $start_date && $now <= $end_date) || $now < $end_date) {
 				if ($balance_forward) {
 					$interval['balance_forward'] = $balance_forward;
 				}
@@ -364,16 +349,20 @@ class budget_controller Extends rest_controller
 			}
 		}
 		// get the current bank balances
-		$balances = $this->_balances();
+		$balances = $this->_balances($sd);
 //print $balances;die;
+//[bank_account_id] => 1
+//[bank_account_balance] => -1393.82
+//[transaction_date] => 2015-09-08
+//[name] => Premier
 		// now put the bank balances in for each interval
 		foreach ($output as $x => $intervalx) {
 			// find the latest balance for this interval
 			foreach ($balances as $balance) {
-				if (strtotime($balance->date) >= strtotime($intervalx['interval_beginning']) && strtotime($balance->date) <= strtotime(substr($intervalx['interval_ending'],0,10))) {
+				if (strtotime($balance->transaction_date) >= strtotime($intervalx['interval_beginning']) && strtotime($balance->transaction_date) <= strtotime(substr($intervalx['interval_ending'],0,10))) {
 					// if the balance falls inside the interval then ....
 					// .... get the latest dated balance for the interval - earlier balances will be overwritten with the latest
-					$output[$x]['accounts'][$balance->bank_account_id]['balance'] = $balance->balance;
+					$output[$x]['accounts'][$balance->bank_account_id]['balance'] = $balance->bank_account_balance;
 				} elseif (empty($output[$x]['accounts'][$balance->bank_account_id]['balance'])) {
 					if ($x > 0) {
 						// if the bank balance is not set then get from last interval
@@ -433,28 +422,36 @@ class budget_controller Extends rest_controller
 		return $balance->balance_forward;
 	}
 
-	private function _balances()
-	{		$bank_account_balances = new bank_account_balance();
-		$bank_account_balances->select('bank_account_balance.bank_account_id, bank_account_balance.balance, bank_account_balance.date, bank_account.name');
-		$bank_account_balances->join('bank_account', 'bank_account.id = bank_account_balance.bank_account_id');
-		$bank_account_balances->where('bank_account_balance.is_deleted', 0);
-		$bank_account_balances->orderBy('bank_account_balance.date');
-		$bank_account_balances->orderBy('bank_account_balance.bank_account_id');
+	private function _balances($sd) {
+		$bank_account_balances = new transaction();
+		$bank_account_balances->select('transaction.bank_account_id, transaction.bank_account_balance, transaction.transaction_date, bank_account.name');
+		$bank_account_balances->join('bank_account', 'bank_account.id = transaction.bank_account_id');
+		$bank_account_balances->where('transaction.transaction_date >= ', $sd);
+		$bank_account_balances->where('transaction.is_deleted', 0);
+		$bank_account_balances->orderBy('transaction.transaction_date', 'ASC');
+		$bank_account_balances->orderBy('transaction.id', 'ASC');
+		
+//		$bank_account_balances = new bank_account_balance();
+//		$bank_account_balances->select('bank_account_balance.bank_account_id, bank_account_balance.balance, bank_account_balance.date, bank_account.name');
+//		$bank_account_balances->join('bank_account', 'bank_account.id = bank_account_balance.bank_account_id');
+//		$bank_account_balances->where('bank_account_balance.is_deleted', 0);
+//		$bank_account_balances->orderBy('bank_account_balance.date');
+//		$bank_account_balances->orderBy('bank_account_balance.bank_account_id');
 		$bank_account_balances->result();
-
+//echo $bank_account_balances->lastQuery();
+//print $bank_account_balances;
+//die;
 		return $bank_account_balances;
 	}
 
-	private function _getNextDate($myDateTimeISO, $addThese, $unit)
-	{
+	private function _getNextDate($myDateTimeISO, $addThese, $unit) {
 		$myDateTime = new DateTime($myDateTimeISO);
 		$myDayOfMonth = date_format($myDateTime, 'j');
 		date_modify($myDateTime, "+" . $addThese . " " . $unit);
 
 		//Find out if the day-of-month has dropped
 		$myNewDayOfMonth = date_format($myDateTime, 'j');
-		if ($myDayOfMonth > 28 && $myNewDayOfMonth < 4)
-		{
+		if ($myDayOfMonth > 28 && $myNewDayOfMonth < 4) {
 			//If so, fix by going back the number of days that have spilled over
 			date_modify($myDateTime, "-" . $myNewDayOfMonth . " " . $unit);
 		}
