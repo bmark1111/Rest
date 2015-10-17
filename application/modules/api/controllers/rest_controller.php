@@ -52,7 +52,7 @@ class rest_controller Extends EP_Controller {
 	 * $original_transaction_date:	original transaction date if it exists
 	 * $new_transaction_date:		new transaction date
 	 */
-	protected function adjustBankBalances($original_transaction_date, $new_transaction_date) {
+	protected function adjustBankBalances($new_transaction_date, $original_transaction_date = FALSE) {
 		// get the date from which to reset the bank account balance
 		$transaction = new transaction();
 		$transaction->select('MAX(transaction_date) AS date');
