@@ -175,12 +175,6 @@ class upload_controller Extends rest_controller
 			$transaction->is_uploaded		= 1;
 			$transaction->save();
 
-//			// TODO if transaction is an overwrite of existing then needs a different type of adjust
-//			// amount and type are always the same with overwrite but date could change thus changing the balance dates
-//			if ($transaction_id !== FALSE && $amount !== FALSE) {
-//				// deduct amount from bank account balance
-//				$this->adjustBankBalances($bank_account_id, $transaction_date, -$amount, $type, TRUE);
-//			}
 //			// add new amount to bank account balance
 //			$this->adjustBankBalances($transaction->bank_account_id, $transaction->transaction_date, $transaction->amount, $transaction->type);
 		} else {

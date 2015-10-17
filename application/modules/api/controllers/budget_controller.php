@@ -45,7 +45,7 @@ class budget_controller Extends rest_controller {
 
 		$config->getBy('name', 'budget_start_date');
 		$this->budget_start_date  = $config->value;
-		$this->budget_views = 6;						// TODO: this should be passed in to accomodate more budget intervals
+		$this->budget_views = 6;
 	}
 
 	public function index() {
@@ -126,9 +126,6 @@ class budget_controller Extends rest_controller {
 				$sql[] = "ORDER BY DAYOFYEAR(T.transaction_date) ASC";
 				break;
 			case 'semi-monthy':
-				// TODO: divide the month:-
-				//		1st through the 15th and 16th through the end of month
-
 				$sql[] = "WHERE T.transaction_date >= '" . $sd . "' AND T.transaction_date < '" . $ed . "' AND T.is_deleted = 0";
 				$sql[] = "GROUP BY DAYOFYEAR(T.transaction_date)";
 				$sql[] = "ORDER BY DAYOFYEAR(T.transaction_date) ASC";
@@ -160,14 +157,13 @@ class budget_controller Extends rest_controller {
 		$running_total = $this->_getBalanceForward($sd);
 
 		// get the starting bank balances
-		// TODO: join bank_account to make sure we do not add in balances of accounts opened after date ($sd)
 		$accounts = new bank_account();
 		$accounts->whereNotDeleted();
 		$accounts->result();
 
-		foreach ($accounts as $account) {
-			$running_total += $account->balance;
-		}
+//		foreach ($accounts as $account) {
+//			$running_total += $account->balance;
+//		}
 
 		// get the forecast
 		$forecasted = $this->_loadForecast($categories, $sd, $ed);
@@ -399,7 +395,6 @@ class budget_controller Extends rest_controller {
 		$this->ajax->output();
 	}
 
-	// TODO: include forecast in the balance forward if necessary
 	private function _getBalanceForward($sd) {
 		// now calculate the balance brought forward
 		$balance = new transaction();
@@ -517,10 +512,7 @@ class budget_controller Extends rest_controller {
 	}
 
 	public function _loadForecast($categories, $sd, $ed) {
-//		$output = array();
-
 		$forecast = new forecast();
-// TODO: if forecast has expired no need to load it
 		$forecast->whereNotDeleted();
 		$forecast->result();
 		if ($forecast->numRows()) {

@@ -19,7 +19,7 @@ class rest_controller Extends EP_Controller {
 		$bank_accounts->result();
 		if ($bank_accounts->numRows()) {
 			foreach ($bank_accounts as $bank_account) {
-				$bank_account_balances[$bank_account->id] = $bank_account->balance;
+				$bank_account_balances[$bank_account->id] = 0;
 			}
 			$transactions = new transaction();
 			$transactions->whereNotDeleted();
@@ -117,7 +117,6 @@ class rest_controller Extends EP_Controller {
 		if ($transaction->numRows()) {
 			return $transaction->bank_account_balance;
 		} else {
-			// TODO may need to return the bank account balance from the bank account table
 			return 0;
 		}
 	}

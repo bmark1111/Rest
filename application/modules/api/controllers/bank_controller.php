@@ -127,7 +127,7 @@ class bank_controller Extends rest_controller
 				$bank_account->name			= $account['name'];
 				$bank_account->date_opened	= $account['date_opened'];
 				$bank_account->date_closed	= $account['date_closed'];
-				$bank_account->balance		= $account['balance'];
+		//		$bank_account->balance		= $account['balance'];
 				$bank_account->save();
 			} else {
 				$bank_account->delete();
