@@ -378,17 +378,18 @@ class budget_controller Extends rest_controller {
 				if (($now >= $sd && $now <= $ed) || $now < $ed) {
 					if (!empty($intervalx['adjustments'][$bank_account_id])) {
 						// adjust the unadjusted bank balance
-						$output[$x]['accounts'][$bank_account_id]['balance'] = $output[$x]['balances'][$bank_account_id] + $intervalx['adjustments'][$bank_account_id];
+//print_r($output[$x]);
+//die("x = $x");
+						if (!empty($output[$x]['balances'][$bank_account_id])) {
+							$output[$x]['accounts'][$bank_account_id]['balance'] = $output[$x]['balances'][$bank_account_id] + $intervalx['adjustments'][$bank_account_id];
+						} else {
+							$output[$x]['accounts'][$bank_account_id]['balance'] = $intervalx['adjustments'][$bank_account_id];
+						}
 					}
 				}
 			}
 			$output[$x]['accounts'] = array_values(array_filter($output[$x]['accounts']));	// compact the accounts array
 		}
-//print_r($output);die;
-//		foreach ($output as $x => $interval) {
-//			// compact the accounts array
-//			$output[$x]['accounts'] = array_values(array_filter($output[$x]['accounts']));
-//		}
 
 		$this->ajax->setData('result', $output);
 
