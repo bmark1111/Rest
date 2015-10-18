@@ -98,14 +98,14 @@ class budget_controller Extends rest_controller {
 //				$start_day = ($offset - ($this->budget_interval * ($this->budget_views - $interval)));		// - 'budget_views' entries and adjust for interval
 //				$end_day = ($offset + ($this->budget_interval * ($this->budget_views + $interval)));		// + 'budget_views' entries and adjust for interval
 				if ($interval == 0) {
-					$start_day = ($offset - ($this->budget_interval * $this->budget_views));					// - 'budget_views' entries and adjust for interval
-					$end_day = ($offset + ($this->budget_interval * $this->budget_views));						// + 'budget_views' entries and adjust for interval
+					$start_day = ($offset - ($this->budget_interval * $this->budget_views));						// - 'budget_views' entries and adjust for interval
+					$end_day = ($offset + ($this->budget_interval * $this->budget_views));							// + 'budget_views' entries and adjust for interval
 				} else if ($interval < 0) {
 					$start_day = ($offset + ($this->budget_interval * ($interval - $this->budget_views)));		// - 'budget_views' entries and adjust for interval
-					$end_day = ($offset + ($this->budget_interval * ($interval - $this->budget_views + 1)));	// + 'budget_views' entries and adjust for interval
+					$end_day = ($offset + ($this->budget_interval * ($interval - $this->budget_views + 1)));		// + 'budget_views' entries and adjust for interval
 				} else if ($interval > 0) {
-					$start_day = ($offset + ($this->budget_interval * ($interval + $this->budget_views - 1)));	// - 'budget_views' entries and adjust for interval
-					$end_day = ($offset + ($this->budget_interval * ($interval + $this->budget_views)) - 1);	// + 'budget_views' entries and adjust for interval
+					$start_day = ($offset + ($this->budget_interval * ($interval + $this->budget_views - 1)) + 1);	// - 'budget_views' entries and adjust for interval
+					$end_day = ($offset + ($this->budget_interval * ($interval + $this->budget_views)));			// + 'budget_views' entries and adjust for interval
 				}
 				$sd = date('Y-m-d', strtotime($this->budget_start_date . " +" . $start_day . " Days"));
 				$ed = date('Y-m-d', strtotime($this->budget_start_date . " +" . $end_day . " Days"));
@@ -290,7 +290,7 @@ class budget_controller Extends rest_controller {
 				$output[] = $data;
 			}
 		}
-
+$__interval = $interval;
 		$adjustments = array();
 		$balance_forward = FALSE;
 		$running_total = 0;
@@ -347,11 +347,18 @@ class budget_controller Extends rest_controller {
 
 		// get the current bank balances
 		$balances = $this->_balances($sd);
-
+//if ($__interval <> 0) {
+//	print $balances;
+////	die;
+//}
 		// now put the bank balances in for each interval
 		foreach ($output as $x => $intervalx) {
 			// find the latest balance for this interval
 			foreach ($balances as $balance) {
+//if ($__interval <> 0) {
+//	print_r($intervalx);
+//	die;
+//}
 				if (strtotime($balance->transaction_date) >= strtotime($intervalx['interval_beginning']) && strtotime($balance->transaction_date) <= strtotime(substr($intervalx['interval_ending'],0,10))) {
 					// if the balance falls inside the interval then ....
 					// .... get the latest dated balance for the interval - earlier balances will be overwritten with the latest
