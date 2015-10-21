@@ -161,12 +161,9 @@ class budget_controller Extends rest_controller {
 		$accounts->whereNotDeleted();
 		$accounts->result();
 
-//		foreach ($accounts as $account) {
-//			$running_total += $account->balance;
-//		}
-
 		// get the forecast
 		$forecasted = $this->_loadForecast($categories, $sd, $ed);
+
 		// now sum the expenses for the forecast intervals
 		$offset = 0;
 		$forecast = array();
@@ -347,18 +344,11 @@ $__interval = $interval;
 
 		// get the current bank balances
 		$balances = $this->_balances($sd);
-//if ($__interval <> 0) {
-//	print $balances;
-////	die;
-//}
+
 		// now put the bank balances in for each interval
 		foreach ($output as $x => $intervalx) {
 			// find the latest balance for this interval
 			foreach ($balances as $balance) {
-//if ($__interval <> 0) {
-//	print_r($intervalx);
-//	die;
-//}
 				if (strtotime($balance->transaction_date) >= strtotime($intervalx['interval_beginning']) && strtotime($balance->transaction_date) <= strtotime(substr($intervalx['interval_ending'],0,10))) {
 					// if the balance falls inside the interval then ....
 					// .... get the latest dated balance for the interval - earlier balances will be overwritten with the latest
@@ -385,8 +375,6 @@ $__interval = $interval;
 				if (($now >= $sd && $now <= $ed) || $now < $ed) {
 					if (!empty($intervalx['adjustments'][$bank_account_id])) {
 						// adjust the unadjusted bank balance
-//print_r($output[$x]);
-//die("x = $x");
 						if (!empty($output[$x]['balances'][$bank_account_id])) {
 							$output[$x]['accounts'][$bank_account_id]['balance'] = $output[$x]['balances'][$bank_account_id] + $intervalx['adjustments'][$bank_account_id];
 						} else {
@@ -432,9 +420,6 @@ $__interval = $interval;
 		$bank_account_balances->orderBy('transaction.transaction_date', 'ASC');
 		$bank_account_balances->orderBy('transaction.id', 'ASC');
 		$bank_account_balances->result();
-//echo $bank_account_balances->lastQuery();
-//print $bank_account_balances;
-//die;
 		return $bank_account_balances;
 	}
 
@@ -544,12 +529,18 @@ $__interval = $interval;
 						$fc->next_due_dates = $next_due_dates;
 						break;
 					case 'Weeks':
-						$diff = $this->_datediffInWeeks($fc->first_due_date, $sd);
-						$diff = intval(round($diff / $fc->every) * $fc->every);
-						// TODO: need to fix this - calculate from sd if diff is calculated from sd - doesn't work in some circumstances ???????????????????/
-						$fdd = date('Y-m-d', strtotime($fc->first_due_date . " +" . $diff . " " . $fc->every_unit));		// set first due date
-//						$fdd = date('Y-m-d', strtotime($sd . " +" . $diff . " " . $fc->every_unit));		// set first due date
-						while (strtotime($fdd . " +" . $offset . " " . $fc->every_unit) < strtotime($ed) && (!$fc->last_due_date || strtotime($fdd . " +" . $offset . " " . $fc->every_unit) <= strtotime($fc->last_due_date))) {
+////						$diff1 = $this->_datediffInWeeks($fc->first_due_date, $sd);
+//						$diff1 = $this->_datediffInWeeks($fc->first_due_date, date('Y-m-d'));
+//						$diff = intval(round($diff1 / $fc->every) * $fc->every);
+//						$fdd = date('Y-m-d', strtotime($fc->first_due_date . " +" . $diff . " " . $fc->every_unit));		// set first due date
+//if ($fc->id == 38) {
+//	echo $fc->first_due_date . " +" . $diff . " " . $fc->every_unit . "\n";
+//	echo "diff1 = $diff1\n";
+//	echo "diff = $diff\n";
+//	die("fdd = $fdd");
+//}
+							$fdd = $fc->first_due_date;
+							while (strtotime($fdd . " +" . $offset . " " . $fc->every_unit) < strtotime($ed) && (!$fc->last_due_date || strtotime($fdd . " +" . $offset . " " . $fc->every_unit) <= strtotime($fc->last_due_date))) {
 							if (strtotime($fdd . " +" . $offset . " " . $fc->every_unit) >= strtotime($fc->first_due_date)) {
 								$next_due_dates[] = date('Y-m-d', strtotime($fdd . " +" . $offset . " " . $fc->every_unit));
 							}
