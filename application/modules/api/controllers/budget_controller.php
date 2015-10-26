@@ -358,7 +358,7 @@ $__interval = $interval;
 						// if the bank balance is not set then get from last interval
 						$output[$x]['accounts'][$balance->bank_account_id]['balance'] = $output[$x-1]['balances'][$balance->bank_account_id];
 					} else {
-						// this is first interval, get the first available bank balance for this account
+						// this is first interval, get the last available bank balance for this account
 						$output[$x]['accounts'][$balance->bank_account_id]['balance'] = $this->getBankAccountBalance($sd, $balance->bank_account_id);
 					}
 				}
@@ -513,77 +513,119 @@ $__interval = $interval;
 			foreach ($forecast as $fc) {
 				$next_due_dates = array();
 
-				// initialize the offset
-				$offset = 0;
 				switch ($fc->every_unit) {
 					case 'Days':
-						$diff = $this->_datediffInWeeks($fc->first_due_date, $sd);
-						$diff = intval(round($diff / $fc->every) * $fc->every);
-						$fdd = date('Y-m-d', strtotime($fc->first_due_date . " +" . $diff . " " . $fc->every_unit));		// set first due date
-						while (strtotime($fdd . " +" . $offset . " " . $fc->every_unit) < strtotime($ed) && (!$fc->last_due_date || strtotime($fdd . " +" . $offset . " Days") <= strtotime($fc->last_due_date))) {
-							if (strtotime($fdd . " +" . $offset . " " . $fc->every_unit) >= strtotime($fc->first_due_date)) {
-								$next_due_dates[] = date('Y-m-d', strtotime($fdd . " +" . $offset . " " . $fc->every_unit));
-							}
-							$offset += $fc->every;
-						}
-						$fc->next_due_dates = $next_due_dates;
+						$dd = array(mktime());						// set unix timestamp of due date
+						$fdd = array(date('Y-m-d', $dd[0]));		// set due dates
 						break;
 					case 'Weeks':
-////						$diff1 = $this->_datediffInWeeks($fc->first_due_date, $sd);
-//						$diff1 = $this->_datediffInWeeks($fc->first_due_date, date('Y-m-d'));
-//						$diff = intval(round($diff1 / $fc->every) * $fc->every);
-//						$fdd = date('Y-m-d', strtotime($fc->first_due_date . " +" . $diff . " " . $fc->every_unit));		// set first due date
-//if ($fc->id == 38) {
-//	echo $fc->first_due_date . " +" . $diff . " " . $fc->every_unit . "\n";
-//	echo "diff1 = $diff1\n";
-//	echo "diff = $diff\n";
-//	die("fdd = $fdd");
-//}
-							$fdd = $fc->first_due_date;
-							while (strtotime($fdd . " +" . $offset . " " . $fc->every_unit) < strtotime($ed) && (!$fc->last_due_date || strtotime($fdd . " +" . $offset . " " . $fc->every_unit) <= strtotime($fc->last_due_date))) {
-							if (strtotime($fdd . " +" . $offset . " " . $fc->every_unit) >= strtotime($fc->first_due_date)) {
-								$next_due_dates[] = date('Y-m-d', strtotime($fdd . " +" . $offset . " " . $fc->every_unit));
-							}
-							$offset += $fc->every;
-						}
-						$fc->next_due_dates = $next_due_dates;
+						$today = date('N');
+						$ff_day = date('N', strtotime($fc->first_due_date));
+						$days = (($ff_day - $today) > 0) ? '+ ' . (intval($ff_day - $today)): '-' . (intval($today - $ff_day));
+						$dd = array(strtotime($days . ' DAYS'));
+						$fdd = array(date('Y-m-d', $dd[0]));
+						break;
+					case 'semi-monthly':
+				$first = 15;						// should come from DB record - in forecast entry make this a dropdown with 1 though 15
+				$second = 'last day of month';		// should come from DB record - in forecast entry make this a dropdown with 16 though 28 and 'last day of month'
+						$fdd = array(date('Y-m') . '-' . sprintf("%02d", $first), date("Y-m-t"));
+						$dd = array(strtotime($fdd[0]), strtotime($fdd[1]));
 						break;
 					case 'Months':
-						$dt = explode('-', $sd);
-						$fdd = $dt[0] . '-' . $dt[1] . '-' . $fc->every_on;
-						while (strtotime($fdd . " +" . $offset . " " . $fc->every_unit) < strtotime($ed) && (!$fc->last_due_date || strtotime($fdd . " +" . $offset . " " . $fc->every_unit) <= strtotime($fc->last_due_date))) {
-							if (strtotime($fdd . " +" . $offset . " " . $fc->every_unit) >= strtotime($fc->first_due_date)) {
-								$next_due_dates[] = date('Y-m-d', strtotime($fdd . " +" . $offset . " " . $fc->every_unit));
-							}
-							$offset += $fc->every;
-						}
-						$fc->next_due_dates = $next_due_dates;
+						$ff_day = ($fc->every_on <= 28) ? $fc->every_on: 28;	// cannot fall on date > 28 for every month
+						$fdd = array(date('Y-m') . '-' . sprintf("%02d", $ff_day));
+						$dd = array(strtotime($fdd[0]));
 						break;
 					case 'Years':
-						$dt = explode('-', $sd);
-						$fdd = $dt[0] . '-' . $fc->every_on;
-						while (strtotime($fdd . " +" . $offset . " " . $fc->every_unit) < strtotime($ed) && (!$fc->last_due_date || strtotime($fdd . " +" . $offset . " " . $fc->every_unit) <= strtotime($fc->last_due_date))) {
-							if (strtotime($fdd . " +" . $offset . " " . $fc->every_unit) >= strtotime($fc->first_due_date)) {
-								$next_due_dates[] = date('Y-m-d', strtotime($fdd . " +" . $offset . " " . $fc->every_unit));
-							}
-							$offset += $fc->every;
-						}
-						$fc->next_due_dates = $next_due_dates;
+						$fdd = array(date('Y') . '-' . $fc->every_on);
+						$dd = array(strtotime($fdd[0]));
 						break;
 				}
+				$x = 0;
+				while ($this->_dateDiff($dd[$x], strtotime($ed)) < 0 &&												// while due_date < end_date
+						(!$fc->last_due_date || $this->_dateDiff($dd[$x], strtotime($fc->last_due_date)) <= 0)) {	// ...AND (last_due_date is not set OR due_date <= last_due_date)
+					if ($this->_dateDiff($dd[$x], strtotime($fc->first_due_date)) >= 0) {		// if due_date >= first_due_date
+						$next_due_dates[] = date('Y-m-d', $dd[$x]);								// ... then save this due date
+					}
+					if (empty($dd[++$x])) {
+						for ($y = 0; $y < count($fdd); $y++) {
+							$dd[$y] = strtotime($fdd[$y] . " +" . $fc->every . " " . $fc->every_unit);	// set next due date
+							$fdd[$y] = date('Y-m-d', $dd[$y]);
+						}
+						$x = 0;
+					}
+				}
+				$fc->next_due_dates = $next_due_dates;
+//				// initialize the offset
+//				$offset = 0;
+//				switch ($fc->every_unit) {
+//					case 'Days':
+//						$diff = $this->_datediffInWeeks($fc->first_due_date, $sd);
+//						$diff = intval(round($diff / $fc->every) * $fc->every);
+//						$fdd = date('Y-m-d', strtotime($fc->first_due_date . " +" . $diff . " " . $fc->every_unit));		// set first due date
+//						while (strtotime($fdd . " +" . $offset . " " . $fc->every_unit) < strtotime($ed) && (!$fc->last_due_date || strtotime($fdd . " +" . $offset . " Days") <= strtotime($fc->last_due_date))) {
+//							if (strtotime($fdd . " +" . $offset . " " . $fc->every_unit) >= strtotime($fc->first_due_date)) {
+//								$next_due_dates[] = date('Y-m-d', strtotime($fdd . " +" . $offset . " " . $fc->every_unit));
+//							}
+//							$offset += $fc->every;
+//						}
+//						$fc->next_due_dates = $next_due_dates;
+//						break;
+//					case 'Weeks':
+//////						$diff1 = $this->_datediffInWeeks($fc->first_due_date, $sd);
+////						$diff1 = $this->_datediffInWeeks($fc->first_due_date, date('Y-m-d'));
+////						$diff = intval(round($diff1 / $fc->every) * $fc->every);
+////						$fdd = date('Y-m-d', strtotime($fc->first_due_date . " +" . $diff . " " . $fc->every_unit));		// set first due date
+//							$fdd = $fc->first_due_date;
+//							while (strtotime($fdd . " +" . $offset . " " . $fc->every_unit) < strtotime($ed) && (!$fc->last_due_date || strtotime($fdd . " +" . $offset . " " . $fc->every_unit) <= strtotime($fc->last_due_date))) {
+//							if (strtotime($fdd . " +" . $offset . " " . $fc->every_unit) >= strtotime($fc->first_due_date)) {
+//								$next_due_dates[] = date('Y-m-d', strtotime($fdd . " +" . $offset . " " . $fc->every_unit));
+//							}
+//							$offset += $fc->every;
+//						}
+//						$fc->next_due_dates = $next_due_dates;
+//						break;
+//					case 'Months':
+//						$dt = explode('-', $sd);
+//						$fdd = $dt[0] . '-' . $dt[1] . '-' . $fc->every_on;
+//						while (strtotime($fdd . " +" . $offset . " " . $fc->every_unit) < strtotime($ed) && (!$fc->last_due_date || strtotime($fdd . " +" . $offset . " " . $fc->every_unit) <= strtotime($fc->last_due_date))) {
+//							if (strtotime($fdd . " +" . $offset . " " . $fc->every_unit) >= strtotime($fc->first_due_date)) {
+//								$next_due_dates[] = date('Y-m-d', strtotime($fdd . " +" . $offset . " " . $fc->every_unit));
+//							}
+//							$offset += $fc->every;
+//						}
+//						$fc->next_due_dates = $next_due_dates;
+//						break;
+//					case 'Years':
+//						$dt = explode('-', $sd);
+//						$fdd = $dt[0] . '-' . $fc->every_on;
+//						while (strtotime($fdd . " +" . $offset . " " . $fc->every_unit) < strtotime($ed) && (!$fc->last_due_date || strtotime($fdd . " +" . $offset . " " . $fc->every_unit) <= strtotime($fc->last_due_date))) {
+//							if (strtotime($fdd . " +" . $offset . " " . $fc->every_unit) >= strtotime($fc->first_due_date)) {
+//								$next_due_dates[] = date('Y-m-d', strtotime($fdd . " +" . $offset . " " . $fc->every_unit));
+//							}
+//							$offset += $fc->every;
+//						}
+//						$fc->next_due_dates = $next_due_dates;
+//						break;
+//				}
 			}
 		}
 		return $forecast;
 	}
 
-	private function _datediffInWeeks($date1, $date2) {
-		if($date1 > $date2) {
-			return $this->_datediffInWeeks($date2, $date1);
-		}
-		$first = new DateTime($date1);
-		$second = new DateTime($date2);
-		return floor($first->diff($second)->days/7);
+	// compare two unix timestamps
+	private function _dateDiff($d1, $d2) {
+		return $d1 - $d2;
 	}
+
+//	private function _datediffInWeeks($date1, $date2) {
+//		if($date1 > $date2) {
+//			return $this->_datediffInWeeks($date2, $date1);
+//		}
+//		$first = new DateTime($date1);
+//		$second = new DateTime($date2);
+//		return floor($first->diff($second)->days/7);
+//	}
 
 	private function _getForecastByCategory($categories, $forecast, $start_date) {
 		$sd = strtotime($start_date);																		// start date of forecast interval
