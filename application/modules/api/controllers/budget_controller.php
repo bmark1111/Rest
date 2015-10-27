@@ -95,16 +95,14 @@ class budget_controller Extends rest_controller {
 		switch ($this->budget_mode) {
 			case 'weekly':
 				$offset = $this->_getEndDay();
-//				$start_day = ($offset - ($this->budget_interval * ($this->budget_views - $interval)));		// - 'budget_views' entries and adjust for interval
-//				$end_day = ($offset + ($this->budget_interval * ($this->budget_views + $interval)));		// + 'budget_views' entries and adjust for interval
 				if ($interval == 0) {
 					$start_day = ($offset - ($this->budget_interval * $this->budget_views));						// - 'budget_views' entries and adjust for interval
 					$end_day = ($offset + ($this->budget_interval * $this->budget_views));							// + 'budget_views' entries and adjust for interval
 				} else if ($interval < 0) {
-					$start_day = ($offset + ($this->budget_interval * ($interval - $this->budget_views)));		// - 'budget_views' entries and adjust for interval
+					$start_day = ($offset + ($this->budget_interval * ($interval - $this->budget_views)));			// - 'budget_views' entries and adjust for interval
 					$end_day = ($offset + ($this->budget_interval * ($interval - $this->budget_views + 1)));		// + 'budget_views' entries and adjust for interval
 				} else if ($interval > 0) {
-					$start_day = ($offset + ($this->budget_interval * ($interval + $this->budget_views - 1)) + 1);	// - 'budget_views' entries and adjust for interval
+					$start_day = ($offset + ($this->budget_interval * ($interval + $this->budget_views - 1)));		// - 'budget_views' entries and adjust for interval
 					$end_day = ($offset + ($this->budget_interval * ($interval + $this->budget_views)));			// + 'budget_views' entries and adjust for interval
 				}
 				$sd = date('Y-m-d', strtotime($this->budget_start_date . " +" . $start_day . " Days"));
@@ -287,7 +285,7 @@ class budget_controller Extends rest_controller {
 				$output[] = $data;
 			}
 		}
-$__interval = $interval;
+
 		$adjustments = array();
 		$balance_forward = FALSE;
 		$running_total = 0;
@@ -312,9 +310,8 @@ $__interval = $interval;
 						$running_total += floatval($forecast[$x]['totals'][$y]);					// update the running total
 					} else if ($forecast[$x]['totals'][$y] !== 0) {
 						// we are not using this forecasted amount so deduct it from the forecasted account balance adjustment
-						// need to deduct the forecast amount from the account balance adjustment
+						// need to set the adjustment amount to zero
 						foreach ($forecast[$x]['adjustments'][$y] as $bank_account_id => $bank_account_balance) {
-//							$forecast[$x]['adjustments'][$y][$bank_account_id] -= floatval($forecast[$x]['totals'][$y]);
 							$forecast[$x]['adjustments'][$y][$bank_account_id] = 0;
 						}
 					}
@@ -515,30 +512,17 @@ $__interval = $interval;
 
 				switch ($fc->every_unit) {
 					case 'Days':
-						$dd = array(mktime());						// set unix timestamp of due date
-						$fdd = array(date('Y-m-d', $dd[0]));		// set due dates
-						break;
 					case 'Weeks':
-						$today = date('N');
-						$ff_day = date('N', strtotime($fc->first_due_date));
-						$days = (($ff_day - $today) > 0) ? '+ ' . (intval($ff_day - $today)): '-' . (intval($today - $ff_day));
-						$dd = array(strtotime($days . ' DAYS'));
-						$fdd = array(date('Y-m-d', $dd[0]));
+					case 'Months':
+					case 'Years':
+						$dd = array(strtotime($fc->first_due_date));
+						$fdd = array($fc->first_due_date);
 						break;
 					case 'semi-monthly':
-				$first = 15;						// should come from DB record - in forecast entry make this a dropdown with 1 though 15
-				$second = 'last day of month';		// should come from DB record - in forecast entry make this a dropdown with 16 though 28 and 'last day of month'
+$first = 15;						// should come from DB record - in forecast entry make this a dropdown with 1 though 15
+$second = 'last day of month';		// should come from DB record - in forecast entry make this a dropdown with 16 though 28 and 'last day of month'
 						$fdd = array(date('Y-m') . '-' . sprintf("%02d", $first), date("Y-m-t"));
 						$dd = array(strtotime($fdd[0]), strtotime($fdd[1]));
-						break;
-					case 'Months':
-						$ff_day = ($fc->every_on <= 28) ? $fc->every_on: 28;	// cannot fall on date > 28 for every month
-						$fdd = array(date('Y-m') . '-' . sprintf("%02d", $ff_day));
-						$dd = array(strtotime($fdd[0]));
-						break;
-					case 'Years':
-						$fdd = array(date('Y') . '-' . $fc->every_on);
-						$dd = array(strtotime($fdd[0]));
 						break;
 				}
 				$x = 0;
@@ -630,6 +614,7 @@ $__interval = $interval;
 	private function _getForecastByCategory($categories, $forecast, $start_date) {
 		$sd = strtotime($start_date);																		// start date of forecast interval
 		$ed = strtotime($start_date . " +" . $this->budget_interval . " " . $this->budget_interval_unit);	// end date of forecast interval
+//die("sd = ".date('Y-m-d', $sd) ." /// ed = " .date('Y-m-d', $ed));
 		$data = array('totals' => array(), 'adjustments' => array());
 		// for each category
 		foreach ($categories as $x => $category) {
