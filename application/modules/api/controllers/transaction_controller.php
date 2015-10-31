@@ -160,7 +160,6 @@ class transaction_controller Extends rest_controller {
 			// if the amount or date or type or bank account changed then reset account balances
 			$this->adjustAccountBalances($transaction->transaction_date, $transaction_date);
 		}
-
 		$this->ajax->output();
 	}
 

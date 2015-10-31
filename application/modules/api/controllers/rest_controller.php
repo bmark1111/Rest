@@ -63,8 +63,7 @@ class rest_controller Extends EP_Controller {
 		$transaction->where("transaction_date < '" . $new_transaction_date . "'", NULL, FALSE);
 		$transaction->limit(1);
 		$transaction->row();
-
-		if ($transaction->date) {
+		if (!empty($transaction->date)) {
 			// now get the transactions that need the balance to be reset
 			$transactions = new transaction();
 			$transactions->whereNotDeleted();
@@ -72,13 +71,11 @@ class rest_controller Extends EP_Controller {
 			$transactions->orderBy('transaction_date', 'ASC');
 			$transactions->orderBy('id', 'ASC');
 			$transactions->result();
-//echo $transactions->lastQuery()."\n";
-//print $transactions;
 			if ($transactions->numRows()) {
 				$first = TRUE;
+				$bank_account_balances = array();
 				foreach ($transactions as $transaction) {
 					if (!$first || empty($transaction->bank_account_balance)) {
-						$first = FALSE;
 						switch ($transaction->type) {
 							case 'DEBIT':
 							case 'CHECK':
@@ -90,10 +87,10 @@ class rest_controller Extends EP_Controller {
 								break;
 						}
 						$transaction->bank_account_balance = $bank_account_balances[$transaction->bank_account_id];
-//print $transaction;
 						$transaction->save();
 					} else {
 						$bank_account_balances[$transaction->bank_account_id] = $transaction->bank_account_balance;
+						$first = FALSE;
 					}
 				}
 			}
