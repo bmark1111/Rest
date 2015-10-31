@@ -160,10 +160,7 @@ class upload_controller Extends rest_controller
 
 			$transaction_id = (!empty($_POST['transaction_id'])) ? $_POST['transaction_id']: FALSE;
 			$transaction = new transaction($transaction_id);
-			$bank_account_id	= (!empty($transaction->bank_account_id)) ? $transaction->bank_account_id: FALSE;
 			$transaction_date	= (!empty($transaction->transaction_date)) ? $transaction->transaction_date: FALSE;
-			$amount				= (!empty($transaction->amount)) ? $transaction->amount: FALSE;
-			$type				= (!empty($transaction->type)) ? $transaction->type: FALSE;
 			$transaction->transaction_date	= date('Y-m-d', strtotime($_POST['transaction_date']));
 			$transaction->description		= $_POST['description'];
 			$transaction->type				= $_POST['type'];
@@ -176,7 +173,11 @@ class upload_controller Extends rest_controller
 			$transaction->save();
 
 //			// add new amount to bank account balance
-//			$this->adjustBankBalances($transaction->bank_account_id, $transaction->transaction_date, $transaction->amount, $transaction->type);
+			if ($transaction_date && strtotime($transaction_date) <= strtotime($transaction->transaction_date)) {
+				$this->ajax->setData('reset_account_balances_date', $transaction_date);
+			} else {
+				$this->ajax->setData('reset_account_balances_date', $transaction->transaction_date);
+			}
 		} else {
 			$this->ajax->addError(new AjaxError("403 - Invalid uploaded transaction (upload/post) - " . $_POST['id']));
 		}

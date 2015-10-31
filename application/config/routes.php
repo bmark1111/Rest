@@ -63,9 +63,9 @@ $route['data/forecast/save']					= "api/forecast/save";				// POST - save foreca
 
 $route['data/upload/counts']					= "api/upload/counts";				// GET - get pending uploaded transactions count
 $route['data/upload/loadAll']					= "api/upload/loadAll";				// GET - load all uploaded transactions in list
-$route['data/upload/assign']					= "api/upload/assign";				// GET - assign uploaded transactionS
-$route['data/upload/post']						= "api/upload/post";				// POST - post uploaded transactionS
-$route['data/upload/delete']					= "api/upload/delete";				// GET - delete uploaded transactionS
+$route['data/upload/assign']					= "api/upload/assign";				// GET - assign uploaded transaction
+$route['data/upload/post']						= "api/upload/post";				// POST - post uploaded transaction
+$route['data/upload/delete']					= "api/upload/delete";				// GET - delete uploaded transaction
 
 $route['data/bank/load']						= "api/bank/load";					// GET - get all banks
 $route['data/bank/accounts']					= "api/bank/accounts";				// GET - get bank accounts
