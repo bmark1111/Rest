@@ -94,28 +94,8 @@ class budget_controller Extends rest_controller {
 
 		switch ($this->budget_mode) {
 			case 'weekly':
-				$offset = $this->_getEndDay();
-				if ($interval == 0) {
-					$start_day = ($offset - ($this->budget_interval * $this->budget_views));						// - 'budget_views' entries and adjust for interval
-					$end_day = ($offset + ($this->budget_interval * $this->budget_views));							// + 'budget_views' entries and adjust for interval
-				} else if ($interval < 0) {
-					$start_day = ($offset + ($this->budget_interval * ($interval - $this->budget_views)));			// - 'budget_views' entries and adjust for interval
-					$end_day = ($offset + ($this->budget_interval * ($interval - $this->budget_views + 1)));		// + 'budget_views' entries and adjust for interval
-				} else if ($interval > 0) {
-					$start_day = ($offset + ($this->budget_interval * ($interval + $this->budget_views - 1)));		// - 'budget_views' entries and adjust for interval
-					$end_day = ($offset + ($this->budget_interval * ($interval + $this->budget_views)));			// + 'budget_views' entries and adjust for interval
-				}
-				$sd = date('Y-m-d', strtotime($this->budget_start_date . " +" . $start_day . " Days"));
-				$ed = date('Y-m-d', strtotime($this->budget_start_date . " +" . $end_day . " Days"));
-
-				$sql[] = "WHERE T.transaction_date >= '" . $sd . "' AND T.transaction_date < '" . $ed . "' AND T.is_deleted = 0";
-				$sql[] = "GROUP BY DAYOFYEAR(T.transaction_date)";
-				$sql[] = "ORDER BY DAYOFYEAR(T.transaction_date) ASC";
-				break;
 			case 'bi-weekly':
 				$offset = $this->_getEndDay();
-//				$start_day = ($offset - ($this->budget_interval * ($this->budget_views - $interval)));		// - 'budget_views' entries and adjust for interval
-//				$end_day = ($offset + ($this->budget_interval * ($this->budget_views + $interval)));		// + 'budget_views' entries and adjust for interval
 				if ($interval == 0) {
 					$start_day = ($offset - ($this->budget_interval * $this->budget_views));						// - 'budget_views' entries and adjust for interval
 					$end_day = ($offset + ($this->budget_interval * $this->budget_views));							// + 'budget_views' entries and adjust for interval
@@ -130,13 +110,32 @@ class budget_controller Extends rest_controller {
 				$ed = date('Y-m-d', strtotime($this->budget_start_date . " +" . $end_day . " Days"));
 
 				$sql[] = "WHERE T.transaction_date >= '" . $sd . "' AND T.transaction_date < '" . $ed . "' AND T.is_deleted = 0";
-				$sql[] = "GROUP BY DAYOFYEAR(T.transaction_date)";
-				$sql[] = "ORDER BY DAYOFYEAR(T.transaction_date) ASC";
+				$sql[] = "GROUP BY YEAR(T.transaction_date), MONTH(T.transaction_date), DAYOFYEAR(T.transaction_date)";
+				$sql[] = "ORDER BY YEAR(T.transaction_date), MONTH(T.transaction_date), DAYOFYEAR(T.transaction_date) ASC";
 				break;
+//			case 'bi-weekly':
+//				$offset = $this->_getEndDay();
+//				if ($interval == 0) {
+//					$start_day = ($offset - ($this->budget_interval * $this->budget_views));						// - 'budget_views' entries and adjust for interval
+//					$end_day = ($offset + ($this->budget_interval * $this->budget_views));							// + 'budget_views' entries and adjust for interval
+//				} else if ($interval < 0) {
+//					$start_day = ($offset + ($this->budget_interval * ($interval - $this->budget_views)));			// - 'budget_views' entries and adjust for interval
+//					$end_day = ($offset + ($this->budget_interval * ($interval - $this->budget_views + 1)));		// + 'budget_views' entries and adjust for interval
+//				} else if ($interval > 0) {
+//					$start_day = ($offset + ($this->budget_interval * ($interval + $this->budget_views - 1)));		// - 'budget_views' entries and adjust for interval
+//					$end_day = ($offset + ($this->budget_interval * ($interval + $this->budget_views)));			// + 'budget_views' entries and adjust for interval
+//				}
+//				$sd = date('Y-m-d', strtotime($this->budget_start_date . " +" . $start_day . " Days"));
+//				$ed = date('Y-m-d', strtotime($this->budget_start_date . " +" . $end_day . " Days"));
+//
+//				$sql[] = "WHERE T.transaction_date >= '" . $sd . "' AND T.transaction_date < '" . $ed . "' AND T.is_deleted = 0";
+//				$sql[] = "GROUP BY YEAR(T.transaction_date), MONTH(T.transaction_date), DAYOFYEAR(T.transaction_date)";
+//				$sql[] = "ORDER BY YEAR(T.transaction_date), MONTH(T.transaction_date), DAYOFYEAR(T.transaction_date) ASC";
+//				break;
 			case 'semi-monthy':
 				$sql[] = "WHERE T.transaction_date >= '" . $sd . "' AND T.transaction_date < '" . $ed . "' AND T.is_deleted = 0";
-				$sql[] = "GROUP BY DAYOFYEAR(T.transaction_date)";
-				$sql[] = "ORDER BY DAYOFYEAR(T.transaction_date) ASC";
+				$sql[] = "GROUP BY YEAR(T.transaction_date), MONTH(T.transaction_date), DAYOFYEAR(T.transaction_date)";
+				$sql[] = "ORDER BY YEAR(T.transaction_date), MONTH(T.transaction_date), DAYOFYEAR(T.transaction_date) ASC";
 				break;
 			case 'monthly':
 				$offset = date('n');			// get the current month
@@ -151,8 +150,8 @@ class budget_controller Extends rest_controller {
 				$ed = $end->format('Y-m-d');
 
 				$sql[] = "WHERE T.transaction_date >= '" . $sd . "' AND T.transaction_date < '" . $ed . "' AND T.is_deleted = 0";
-				$sql[] = "GROUP BY MONTH(T.transaction_date)";
-				$sql[] = "ORDER BY MONTH(T.transaction_date) ASC";
+				$sql[] = "GROUP BY YEAR(T.transaction_date), MONTH(T.transaction_date)";
+				$sql[] = "ORDER BY YEAR(T.transaction_date), MONTH(T.transaction_date) ASC";
 				break;
 			default:
 				$this->ajax->addError(new AjaxError("Invalid budget_mode setting (budget/load)"));
@@ -161,7 +160,7 @@ class budget_controller Extends rest_controller {
 
 		$transactions = new transaction();
 		$transactions->queryAll(implode(' ', $sql));
-
+//print $transactions;die;
 		$running_total = $this->_getBalanceForward($sd);
 
 		// get the starting bank balances
