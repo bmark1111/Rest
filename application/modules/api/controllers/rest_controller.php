@@ -65,17 +65,25 @@ class rest_controller Extends EP_Controller {
 	public function resetAccountBalances() {
 		if ($_SERVER['REQUEST_METHOD'] != 'POST') {
 //			$this->ajax->set_header("Forbidden", '403');
-			$this->ajax->addError(new AjaxError("403 - Forbidden (rest/resetAccountBalances)"));
+			$this->ajax->addError(new AjaxError("403 - Forbidden (reset/resetAccountBalances)"));
 			$this->ajax->output();
 		}
 
 		$input = file_get_contents('php://input');
 		$_POST = json_decode($input, TRUE);
 
-		if ($this->_checkIsAValidDate($_POST['accountBalancesResetDate'])) {
-die($_POST['accountBalancesResetDate']);
-			$this->adjustAccountBalances($_POST['accountBalancesResetDate']);
+		if (!empty($_POST['accountBalancesResetDate']) && is_array($_POST['accountBalancesResetDate'])) {
+			foreach ($_POST['accountBalancesResetDate'] as $account_id => $reset_date) {
+				if ($this->_checkIsAValidDate($reset_date)) {
+//echo $reset_date." /// ".$account_id."\n";
+					$this->adjustAccountBalances($reset_date, $account_id);
+				}
+			}
+		} else {
+			$this->ajax->addError(new AjaxError("Invalid account reset date (reset/resetAccountBalances)"));
 		}
+//die;
+		$this->ajax->output();
 	}
 
 	/**
@@ -85,7 +93,7 @@ die($_POST['accountBalancesResetDate']);
 	 * @param {date} $new_transaction_date - new transaction date
 	 * @return {undefined}
 	 */
-	protected function adjustAccountBalances($new_transaction_date, $original_transaction_date = FALSE) {
+	protected function adjustAccountBalances($transaction_date, $bank_account_id, $original_transaction_date = FALSE) {
 		if ($this->_checkIsAValidDate($new_transaction_date)) {
 			// get the date from which to reset the bank account balance
 			$transaction = new transaction();
@@ -95,6 +103,7 @@ die($_POST['accountBalancesResetDate']);
 				$transaction->where("transaction_date < '" . $original_transaction_date . "'", NULL, FALSE);
 			}
 			$transaction->where("transaction_date < '" . $new_transaction_date . "'", NULL, FALSE);
+			$transaction->where("bank_account_id", $bank_account_id);
 			$transaction->limit(1);
 			$transaction->row();
 			if (!empty($transaction->date)) {
