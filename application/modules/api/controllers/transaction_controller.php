@@ -191,24 +191,24 @@ class transaction_controller Extends rest_controller {
 		$_POST = json_decode($input, TRUE);
 
 		if (!empty($_POST['splits'])) {
-			$split_total = floatval($_POST['amount']);
+			$split_total = intval($_POST['amount'] * 100);
 			foreach ($_POST['splits'] as $split) {
 				if (empty($split['is_deleted']) || $split['is_deleted'] != '1') {
 					switch ($split['type']) {
 						case 'DEBIT':
 						case 'CHECK':
 							if ($_POST['type'] == 'DEBIT' || $_POST['type'] == 'CHECK') {
-								$split_total -= floatval($split['amount']);
+								$split_total -= intval($split['amount'] * 100);
 							} else {
-								$split_total += floatval($split['amount']);
+								$split_total += intval($split['amount'] * 100);
 							}
 							break;
 						case 'CREDIT':
 						case 'DSLIP':
 							if ($_POST['type'] == 'CREDIT' || $_POST['type'] == 'DSLIP') {
-								$split_total -= floatval($split['amount']);
+								$split_total -= intval($split['amount'] * 100);
 							} else {
-								$split_total += floatval($split['amount']);
+								$split_total += intval($split['amount'] * 100);
 							}
 							break;
 					}
@@ -219,7 +219,7 @@ class transaction_controller Extends rest_controller {
 				return FALSE;
 			}
 		} elseif (empty($_POST['amount']) || $_POST['amount'] == 0) {
-			$this->form_validation->set_message('isValidAmount', 'The Amount Field is Required');
+			$this->form_validation->set_message('isValidAmount', 'The Split Fields are Required');
 			return FALSE;
 		}
 		return TRUE;
