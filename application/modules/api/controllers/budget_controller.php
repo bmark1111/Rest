@@ -73,7 +73,7 @@ class budget_controller Extends rest_controller {
 		}
 
 		$select = array();
-		$select[] = "T.transaction_date";
+		$select[] = "T.transaction_date, T.reconciled_date";
 		foreach ($categories as $category) {
 			$select[] = "SUM(CASE WHEN T.category_id = " . $category->id . " AND T.type = 'CREDIT' THEN T.amount ELSE 0 END)" .
 						" + SUM(CASE WHEN T.category_id = " . $category->id . " AND T.type = 'DSLIP' THEN T.amount ELSE 0 END)" .
@@ -160,12 +160,14 @@ class budget_controller Extends rest_controller {
 
 		$transactions = new transaction();
 		$transactions->queryAll(implode(' ', $sql));
-//print $transactions;die;
+
 		$running_total = $this->_getBalanceForward($sd);
 
 		// get the starting bank balances
 		$accounts = new bank_account();
-		$accounts->whereNotDeleted();
+		$accounts->select("bank_account.id, CONCAT(`bank`.`name`,' ',`bank_account`.`name`) as name", FALSE);
+		$accounts->join('bank', 'bank.id = bank_account.bank_id');
+		$accounts->where('bank_account.is_deleted', 0);
 		$accounts->result();
 
 		// get the forecast
@@ -220,6 +222,7 @@ class budget_controller Extends rest_controller {
 			$ied = $this->_getNextDate($isd, $this->budget_interval, $this->budget_interval_unit);
 			$ied = $this->_getNextDate($ied, -1, 'days');												// set the first interval end date
 
+			$reconciled_date = NULL;
 			// now sort transactions into intervals
 			foreach ($transactions as $transaction) {
 				while (strtotime($transaction->transaction_date) > strtotime($ied)) {
@@ -228,6 +231,7 @@ class budget_controller Extends rest_controller {
 						$data['accounts'][$account->id] = array('bank_account_id' => $account->id, 'name' => $account->name, 'balance' => NULL);
 					}
 
+					$data['reconciled_date']	= $reconciled_date;
 					$data['interval_beginning']	= date('c', strtotime($isd));
 					$data['interval_ending']	= date('c', strtotime($ied . " 23:59:59"));
 					if (empty($data['totals'])) {
@@ -247,6 +251,7 @@ class budget_controller Extends rest_controller {
 					$ied = $this->_getNextDate($ied, -1, 'days');
 				}
 
+				$reconciled_date = $transaction->reconciled_date;
 				foreach ($transaction as $label => $value) {
 					if (substr($label, 0, 6) == 'total_') {
 						$index = explode('_', $label);
@@ -262,7 +267,8 @@ class budget_controller Extends rest_controller {
 			}
 		}
 
-		$data['running_total'] = $running_total;
+		$data['running_total']		= $running_total;
+		$data['reconciled_date']	= 'aaaaaaaaa';
 		$data['interval_beginning']	= date('c', strtotime($isd));
 		$data['interval_ending']	= date('c', strtotime($ied . " 23:59:59"));
 		// make accounts entry
@@ -281,6 +287,7 @@ class budget_controller Extends rest_controller {
 				$isd = $this->_getNextDate($isd, $this->budget_interval, $this->budget_interval_unit);		// set the interval start date
 				$ied = $this->_getNextDate($isd, $this->budget_interval, $this->budget_interval_unit);
 				$ied = $this->_getNextDate($ied, -1, 'days');												// set the interval end date
+				$data['running_total']		= $running_total;
 				$data['interval_beginning']	= date('c', strtotime($isd));
 				$data['interval_ending']	= date('c', strtotime($ied . " 23:59:59"));
 				$data['interval_total']		= 0;
@@ -393,6 +400,17 @@ class budget_controller Extends rest_controller {
 		}
 
 		$this->ajax->setData('result', $output);
+		
+//		// now get last reconciled date
+//		$transactions = new transaction();
+//		$transactions->select('MAX(transaction_date) as transaction_date, reconciled_date, bank_account_id', FALSE);
+//		$transactions->whereNotDeleted();
+////		$transactions->where('is_reconciled', 1);
+//		$transactions->where('reconciled_date IS NOT NULL');
+//		$transactions->groupBy('bank_account_id');
+//		$transactions->orderBy('transaction_date', 'DESC');
+//		$transactions->result();
+//		$this->ajax->setData('reconciled', $transactions);
 
 		$this->ajax->output();
 	}

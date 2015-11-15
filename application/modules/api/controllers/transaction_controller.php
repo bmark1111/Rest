@@ -154,21 +154,35 @@ class transaction_controller Extends rest_controller {
 		}
 
 		/*
-		 * if the transaction will affect the account balances then adjust
+		 * if the transaction will affect the account balances then adjust balances
 		 */
 		if ($amount !== $transaction->amount || $transaction_date !== $transaction->transaction_date || $type !== $transaction->type  || $bank_account_id !== $transaction->bank_account_id) {
+			$resetBalances = array();
 			// if the amount or date or type or bank account changed then reset account balances
-			if ($bank_account_id !== $transaction->bank_account_id) {
+			if ($bank_account_id && $bank_account_id !== $transaction->bank_account_id) {
 				// if we changed the account then reset balance for original account
-				$this->adjustAccountBalances($transaction->transaction_date, $transaction_date, $bank_account_id);
+//				$this->adjustAccountBalances($transaction->transaction_date, $transaction_date, $bank_account_id);
+				if (!$transaction_date || strtotime($transaction->transaction_date) < strtotime($transaction_date)) {
+					$date = $transaction->transaction_date;
+				} else {
+					$date = $transaction_date;
+				}
+				$resetBalances[$bank_account_id] = $date;
 			}
-			$this->adjustAccountBalances($transaction->transaction_date, $transaction_date, $transaction->bank_account_id);
+			if (!$transaction_date || strtotime($transaction->transaction_date) < strtotime($transaction_date)) {
+				$date = $transaction->transaction_date;
+			} else {
+				$date = $transaction_date;
+			}
+			$resetBalances[$transaction->bank_account_id] = $date;
+			$this->resetBalances($resetBalances);
+//			$this->adjustAccountBalances($transaction->transaction_date, $transaction_date, $transaction->bank_account_id);
 		}
 		$this->ajax->output();
 	}
 
 	/*
-	 * Checks is splits are entered, if not main category is a required field
+	 * Checks if splits are entered, if not main category is a required field
 	 */
 	public function isValidCategory() {
 		$input = file_get_contents('php://input');
@@ -249,7 +263,8 @@ class transaction_controller Extends rest_controller {
 			}
 			$transaction->delete();
 
-			$this->adjustAccountBalances($transaction_date, $bank_account_id);	// adjust the account balance from this transaction forward
+//			$this->adjustAccountBalances($transaction_date, $bank_account_id);	// adjust the account balance from this transaction forward
+			$this->resetBalances(array($bank_account_id => $transaction_date));	// adjust the account balance from this transaction forward
 		} else {
 			$this->ajax->addError(new AjaxError("Invalid transaction - (transaction/delete)"));
 		}

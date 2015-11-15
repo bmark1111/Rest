@@ -80,8 +80,7 @@ class EP_Controller extends MX_Controller
 		$oQuery = $this->db->get();
 
 		// make sure that only one result is found
-		if ($oQuery->num_rows() != 1)
-		{
+		if ($oQuery->num_rows() != 1) {
 			throw new Exception('Account Not Found');
 		}
 		// actually get the result
@@ -94,8 +93,7 @@ class EP_Controller extends MX_Controller
 		$this->switchDatabase($oRow->domain . '_budget');
 
 		// set the current instance of the object to this if it's not already set
-		if(!isset(self::$_instance))
-		{
+		if(!isset(self::$_instance)) {
 			self::$_instance =& $this;
 		}
 
@@ -103,8 +101,7 @@ class EP_Controller extends MX_Controller
 		// We're doing this by adding the directories to the *end* of the list.
 		// The $this->load->_add_module_path() function adds to the beginning of
 		// the list and we want the current environment's directory to take precedence.
-		switch (APPLICATION)
-		{
+		switch (APPLICATION) {
 			case 'CLI':
 				$this->load->_ci_library_paths[] = SHAREPATH;
 				break;
@@ -115,19 +112,15 @@ class EP_Controller extends MX_Controller
 		// load any remaining libraries that are necessary
 		$this->loadLibraries();
 
-		if (APPLICATION == 'REST')
-		{
+		if (APPLICATION == 'REST') {
 			$uri = explode('/', uri_string());
-			if (!empty($uri[0]))
-			{
-				switch($uri[0])
-				{
+			if (!empty($uri[0])) {
+				switch($uri[0]) {
 					case 'data':
-						if($this->input->is_ajax_request())
-						{
-							if (!empty($_SERVER['PHP_AUTH_USER']) && !empty($_SERVER['PHP_AUTH_PW']) && !empty($_SERVER['HTTP_TOKENID']) && !empty($_SERVER['HTTP_REFERER']) && !empty($_SERVER['REMOTE_ADDR']))
-							{	// query the database for the correct user & user session information
-								$this->db->select('user.id, user_session.id as session_id, user_session.expire');
+						if($this->input->is_ajax_request()) {
+							if (!empty($_SERVER['PHP_AUTH_USER']) && !empty($_SERVER['PHP_AUTH_PW']) && !empty($_SERVER['HTTP_TOKENID']) && !empty($_SERVER['HTTP_REFERER']) && !empty($_SERVER['REMOTE_ADDR'])) {
+								// query the database for the correct user & user session information
+								$this->db->select('user.id, user_session.id as session_id, user_session.expire, user_session.data');
 								$this->db->from('user_session');
 								$this->db->join('user', 'user.id = user_session.user_id', 'left');
 								$this->db->where('user_session.id', $_SERVER['HTTP_TOKENID']);
@@ -137,29 +130,29 @@ class EP_Controller extends MX_Controller
 								$this->db->where('user.pass', md5($_SERVER['PHP_AUTH_PW'] . $this->config->item('encryption_key')));
 								$oQuery = $this->db->get();
 								// make sure that only one result is found
-								if ($oQuery->num_rows() != 1)
-								{
+								if ($oQuery->num_rows() != 1) {
 									$this->ajax->set_header("You are not authorzed - 001", '401');
 									exit;
 								}
 								$uSession = $oQuery->row();
 
 								// check if session has expired
-								if (time() > strtotime($uSession->expire))
-								{
+								if (time() > strtotime($uSession->expire)) {
 									$this->ajax->set_header("EXPIRED", '401');
 									exit;
 								}
 
 								// update the user_session 'expire' to 30 mins past now
 								$data = array(
-										'expire' => date('Y-m-d H:i:s', strtotime('+30 MINS'))
-									);
+									'expire' => date('Y-m-d H:i:s', strtotime('+30 MINS'))
+								);
 								$this->db->where('id', $uSession->session_id);
 								$this->db->update('user_session', $data); 
 
 								// set the logged in user
 								$this->nUserId = $uSession->id;
+								// set the user session data
+								$this->nUserData = $uSession->data;
 							}
 						} else {
 							$this->ajax->set_header("Not Found", '404');
@@ -172,8 +165,7 @@ class EP_Controller extends MX_Controller
 					case 'logout':
 						break;
 					default:
-						if($this->input->is_ajax_request())
-						{
+						if($this->input->is_ajax_request()) {
 							$this->ajax->set_header("You are not authorzed - 002", '401');
 							exit;
 						} else {
@@ -183,8 +175,7 @@ class EP_Controller extends MX_Controller
 						break;
 				}
 			} else {
-				if($this->input->is_ajax_request())
-				{
+				if($this->input->is_ajax_request()) {
 					$this->ajax->set_header("You are not authorzed - 003", '401');
 					exit;
 				} else {
@@ -272,7 +263,7 @@ class EP_Controller extends MX_Controller
 			}
 		}
 */
-		elseif(APPLICATION == 'ADMIN')
+/*		elseif(APPLICATION == 'ADMIN')
 		{
 			// Used for the rss/atom newsfeed for Support News to bypass the ip whitelist:
 			if ($this->uri->segment(1) == 'error' && $this->uri->segment(2) == 'newsfeed')
@@ -328,6 +319,7 @@ class EP_Controller extends MX_Controller
 				$this->nUserId = intval($this->session->userdata('user_id'));
 			}
 		}
+*/
 	}
 
 	/**
@@ -391,8 +383,7 @@ class EP_Controller extends MX_Controller
 	 * @description - returns the given environment for the server
 	 * @return string
 	 */
-	public function getEnvironment()
-	{
+	public function getEnvironment() {
 		return $this->sEnvironment;
 	}
 
@@ -402,28 +393,21 @@ class EP_Controller extends MX_Controller
 	 * @description - loads any needed libraries
 	 * @return - NULL
 	 */
-	private function loadLibraries()
-	{
-		if(APPLICATION == 'REST')
-		{
+	private function loadLibraries() {
+		if(APPLICATION == 'REST') {
 			$this->load->helper('usage');
 		}
 		$this->load->helper('inflector');
-		//$this->load->helper('form', 'inflector');
-		$this->load->library(array('dataFormat', 'session', 'ajax', 'nagilum', 'css', 'js'));
-//		$this->load->library(array('form_validation', 'dataFormat', 'session', 'ajax', 'css', 'js', 'nagilum', 'permissions', 'feature'));
-//		$this->load->library(array('form_validation', 'dataFormat', 'ajax', 'css', 'js', 'nagilum', 'permissions', 'feature'));
-//		$this->load->driver('cache', array('adapter' => 'memcached', 'backup' => 'file'));
+
+		$this->load->library(array('dataFormat', 'session', 'ajax', 'nagilum', 'userdata', 'appdata'));
 
 		$this->form_validation->CI =& $this; // set the CI instance with form validation to the current controller
 
-		// if the environment is not production and it's not an ajax request enable the profiler
-		if(ENVIRONMENT == 'production')
-		{
+		// if the environment is not production enable the profiler
+		if(ENVIRONMENT == 'production') {
 			$this->output->enable_profiler(FALSE);
 		} else {
-			if(!$this->input->is_ajax_request())
-			{
+			if(!$this->input->is_ajax_request()) {
 				$this->output->enable_profiler($this->config->item('enable_profiler'));
 			} else {
 				$this->output->enable_profiler(FALSE);

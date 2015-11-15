@@ -172,13 +172,14 @@ class upload_controller Extends rest_controller
 			$transaction->is_uploaded		= 1;
 			$transaction->save();
 
-			// THIS COULD BE DONE IN THE FRONT-END CODE
-			// resets account balance - This tells front-end to display the 'Reset Account Balance" button
-			$this->ajax->setData('reset_bank_account_id', $transaction->bank_account_id);
+//			// resets account balance - This tells front-end to display the 'Reset Account Balance" button
+//			$this->ajax->setData('reset_bank_account_id', $transaction->bank_account_id);
 			if ($transaction_date && strtotime($transaction_date) <= strtotime($transaction->transaction_date)) {
-				$this->ajax->setData('reset_account_balances_date', $transaction_date);
+//				$this->ajax->setData('reset_account_balances_date', $transaction_date);
+				$this->resetBalances(array($transaction->bank_account_id => $transaction_date));	// adjust the account balance from this transaction forward
 			} else {
-				$this->ajax->setData('reset_account_balances_date', $transaction->transaction_date);
+//				$this->ajax->setData('reset_account_balances_date', $transaction->transaction_date);
+				$this->resetBalances(array($transaction->bank_account_id => $transaction->transaction_date));	// adjust the account balance from this transaction forward
 			}
 		} else {
 			$this->ajax->addError(new AjaxError("403 - Invalid uploaded transaction (upload/post) - " . $_POST['id']));

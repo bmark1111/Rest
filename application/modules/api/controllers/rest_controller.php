@@ -11,6 +11,16 @@ class rest_controller Extends EP_Controller {
 		parent::__construct();
 //$this->_balanceUpdate();				// resets all bank balances
 //die('XXXXXXXXXXXXXXXXXXXXXXXXXXXXx');
+		$class = get_class($this);
+		if ($class !== 'upload_controller') {
+			if ($resetBalances = $this->appdata->get('resetBalances')) {	// get resets
+				foreach($resetBalances as $account_id => $date) {
+					// for each reset adjust the account balance
+					$this->_adjustAccountBalances($date, $account_id);
+				}
+				$this->appdata->remove('resetBalances');	// remove the reset balances from app data
+			}
+		}
 	}
 
 	private function _balanceUpdate() {
@@ -75,15 +85,28 @@ class rest_controller Extends EP_Controller {
 		if (!empty($_POST['accountBalancesResetDate']) && is_array($_POST['accountBalancesResetDate'])) {
 			foreach ($_POST['accountBalancesResetDate'] as $account_id => $reset_date) {
 				if ($this->_checkIsAValidDate($reset_date)) {
-//echo $reset_date." /// ".$account_id."\n";
 					$this->adjustAccountBalances($reset_date, $account_id);
 				}
 			}
 		} else {
 			$this->ajax->addError(new AjaxError("Invalid account reset date (reset/resetAccountBalances)"));
 		}
-//die;
 		$this->ajax->output();
+	}
+
+	protected function resetbalances($resets) {
+		$update = FALSE;
+		$resetBalances = $this->appdata->get('resetBalances');	// get existing resets
+		foreach ($resets as $account_id => $date) {
+			if (empty($resetBalances[$account_id]) || strtotime($date) < strtotime($resetBalances[$account_id]))
+			{	// found a lower date to reset to
+				$resetBalances[$account_id] = $date;
+				$update = TRUE;
+			}
+		}
+		if ($update) {
+			$this->appdata->set('resetBalances', $resetBalances);
+		}
 	}
 
 	/**
@@ -93,17 +116,18 @@ class rest_controller Extends EP_Controller {
 	 * @param {date} $new_transaction_date - new transaction date
 	 * @return {undefined}
 	 */
-	protected function adjustAccountBalances($transaction_date, $bank_account_id, $original_transaction_date = FALSE) {
-		if ($this->_checkIsAValidDate($new_transaction_date)) {
+//	protected function adjustAccountBalances($transaction_date, $account_id, $original_transaction_date = FALSE) {
+	private function _adjustAccountBalances($transaction_date, $account_id) {
+		if ($this->_checkIsAValidDate($transaction_date)) {
 			// get the date from which to reset the bank account balance
 			$transaction = new transaction();
 			$transaction->select('MAX(transaction_date) AS date');
 			$transaction->whereNotDeleted();
-			if ($original_transaction_date && $this->_checkIsAValidDate($original_transaction_date)) {
-				$transaction->where("transaction_date < '" . $original_transaction_date . "'", NULL, FALSE);
-			}
-			$transaction->where("transaction_date < '" . $new_transaction_date . "'", NULL, FALSE);
-			$transaction->where("bank_account_id", $bank_account_id);
+//			if ($original_transaction_date && $this->_checkIsAValidDate($original_transaction_date)) {
+//				$transaction->where("transaction_date < '" . $original_transaction_date . "'", NULL, FALSE);
+//			}
+			$transaction->where("transaction_date < '" . $transaction_date . "'", NULL, FALSE);
+			$transaction->where("bank_account_id", $account_id);
 			$transaction->limit(1);
 			$transaction->row();
 			if (!empty($transaction->date)) {
@@ -111,9 +135,12 @@ class rest_controller Extends EP_Controller {
 				$transactions = new transaction();
 				$transactions->whereNotDeleted();
 				$transactions->where("transaction_date >= '" . $transaction->date . "'", NULL, FALSE);
+				$transactions->where("bank_account_id", $account_id);
 				$transactions->orderBy('transaction_date', 'ASC');
 				$transactions->orderBy('id', 'ASC');
 				$transactions->result();
+//echo $transactions->lastQuery();
+//die;
 				if ($transactions->numRows()) {
 					$first = TRUE;
 					$bank_account_balances = array();
@@ -145,11 +172,11 @@ class rest_controller Extends EP_Controller {
 	 * sd = we need the first available balance before this date
 	 * bank_account_id = bank account id
 	 */
-	protected function getBankAccountBalance($sd, $bank_account_id) {
+	protected function getBankAccountBalance($sd, $account_id) {
 		$transaction = new transaction();
 		$transaction->whereNotDeleted();
 		$transaction->where("transaction_date < '" . $sd . "'", NULL, FALSE);
-		$transaction->where('bank_account_id', $bank_account_id);
+		$transaction->where('bank_account_id', $account_id);
 		$transaction->orderBy('transaction_date', 'DESC');
 		$transaction->limit(1);
 		$transaction->row();
