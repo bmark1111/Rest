@@ -38,6 +38,11 @@ class login_controller extends EP_Controller {
 			$user_session->user_id			= $user->id;
 			$user_session->expire			= date('Y-m-d H:i:s', strtotime('+30 MINS'));
 			$user_session->save();
+
+			$config = new configuration();
+			$config->getBy('name', 'budget_views');
+			$budget_views  = ($config->value * 2) + 1;	// show the current interval + forward and backward budget_views
+			$this->ajax->setData('budget_views', $budget_views);
 		} else {
 			$this->ajax->addError(new AjaxError('Your login credentials are incorrect'));
 		}
