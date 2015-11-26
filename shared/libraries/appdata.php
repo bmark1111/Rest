@@ -49,6 +49,7 @@ class AppData {
 	 * 
 	 */
 	public function remove($key) {
+		$app_data = new app_data();
 		$sql = "DELETE FROM app_data WHERE `key` = '" . $key . "'";
 		$app_data->queryAll($sql);
 	}
