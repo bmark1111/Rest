@@ -58,12 +58,12 @@ class rest_controller Extends EP_Controller {
 	}
 
 	/**
-	 * @name _checkIsAValidDate
+	 * @name _isValidDate
 	 * @name {function}
 	 * @param {date} $myDateString
 	 * @return {bool}
 	 */
-	private function _checkIsAValidDate($myDateString){
+	private function _isValidDate($myDateString){
 		return (bool)strtotime($myDateString);
 	}
 
@@ -72,41 +72,30 @@ class rest_controller Extends EP_Controller {
 	 * @name resetAccountBalances
 	 * @type {function}
 	 */
-	public function resetAccountBalances() {
+	public function reconcileTransactions() {
 		if ($_SERVER['REQUEST_METHOD'] != 'POST') {
 //			$this->ajax->set_header("Forbidden", '403');
-			$this->ajax->addError(new AjaxError("403 - Forbidden (reset/resetAccountBalances)"));
+			$this->ajax->addError(new AjaxError("403 - Forbidden (rest/reconcileTransactions)"));
 			$this->ajax->output();
 		}
 
 		$input = file_get_contents('php://input');
 		$_POST = json_decode($input, TRUE);
-
-		if (!empty($_POST['accountBalancesResetDate']) && is_array($_POST['accountBalancesResetDate'])) {
-			foreach ($_POST['accountBalancesResetDate'] as $account_id => $reset_date) {
-				if ($this->_checkIsAValidDate($reset_date)) {
-					$this->adjustAccountBalances($reset_date, $account_id);
-				}
-			}
+		$date = explode('T', $_POST['date']);
+		if (!empty($date[0]) && $this->_isValidDate($date[0]) && !empty($_POST['account_id']) && is_numeric($_POST['account_id'])) {
+			$sql = "UPDATE	transaction "
+				. "SET		reconciled_date = '" . $date[0] . "' "
+				. "WHERE	reconciled_date IS NULL"
+				. "		AND is_deleted = 0"
+				. "		AND	bank_account_id = " . $_POST['account_id']
+				. "		AND	transaction_date <= '" . $date[0] . "'";
+			$transaction = new transaction();
+die($sql);
+//			$transaction->queryAll($sql);
 		} else {
-			$this->ajax->addError(new AjaxError("Invalid account reset date (reset/resetAccountBalances)"));
+			$this->ajax->addError(new AjaxError("Invalid reconcile transaction date (rest/reconcileTransactions)"));
 		}
 		$this->ajax->output();
-	}
-
-	protected function resetbalances($resets) {
-		$update = FALSE;
-		$resetBalances = $this->appdata->get('resetBalances');	// get existing resets
-		foreach ($resets as $account_id => $date) {
-			if (empty($resetBalances[$account_id]) || strtotime($date) < strtotime($resetBalances[$account_id]))
-			{	// found a lower date to reset to
-				$resetBalances[$account_id] = $date;
-				$update = TRUE;
-			}
-		}
-		if ($update) {
-			$this->appdata->set('resetBalances', $resetBalances);
-		}
 	}
 
 	/**
@@ -116,16 +105,12 @@ class rest_controller Extends EP_Controller {
 	 * @param {date} $new_transaction_date - new transaction date
 	 * @return {undefined}
 	 */
-//	protected function adjustAccountBalances($transaction_date, $account_id, $original_transaction_date = FALSE) {
 	private function _adjustAccountBalances($transaction_date, $account_id) {
-		if ($this->_checkIsAValidDate($transaction_date)) {
+		if ($this->_isValidDate($transaction_date)) {
 			// get the date from which to reset the bank account balance
 			$transaction = new transaction();
 			$transaction->select('MAX(transaction_date) AS date');
 			$transaction->whereNotDeleted();
-//			if ($original_transaction_date && $this->_checkIsAValidDate($original_transaction_date)) {
-//				$transaction->where("transaction_date < '" . $original_transaction_date . "'", NULL, FALSE);
-//			}
 			$transaction->where("transaction_date < '" . $transaction_date . "'", NULL, FALSE);
 			$transaction->where("bank_account_id", $account_id);
 			$transaction->limit(1);
@@ -139,8 +124,6 @@ class rest_controller Extends EP_Controller {
 				$transactions->orderBy('transaction_date', 'ASC');
 				$transactions->orderBy('id', 'ASC');
 				$transactions->result();
-//echo $transactions->lastQuery();
-//die;
 				if ($transactions->numRows()) {
 					$first = TRUE;
 					$bank_account_balances = array();
@@ -180,8 +163,7 @@ class rest_controller Extends EP_Controller {
 		$transaction->orderBy('transaction_date', 'DESC');
 		$transaction->limit(1);
 		$transaction->row();
-//echo $transaction->lastQuery()."\n";
-//print $transaction;die;
+
 		if ($transaction->numRows()) {
 			return $transaction->bank_account_balance;
 		} else {

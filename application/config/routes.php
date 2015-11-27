@@ -72,7 +72,7 @@ $route['data/bank/accounts']					= "api/bank/accounts";				// GET - get bank acc
 $route['data/bank/delete']						= "api/bank/delete";				// GET - delete bank
 $route['data/bank/edit']						= "api/bank/edit";					// GET - edit bank
 $route['data/bank/save']						= "api/bank/save";					// POST - save bank
-$route['data/rest/resetAccountBalances']		= "api/rest/resetAccountBalances";	// POST - reset account balances
+$route['data/rest/reconcileTransactions']		= "api/rest/reconcileTransactions";	// POST - reconcile transactions
 
 $route['data/category/load']					= "api/category/load";				// GET - get all categories
 $route['data/category/delete']					= "api/category/delete";			// GET - delete category
