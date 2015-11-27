@@ -90,8 +90,8 @@ class rest_controller Extends EP_Controller {
 				. "		AND	bank_account_id = " . $_POST['account_id']
 				. "		AND	transaction_date <= '" . $date[0] . "'";
 			$transaction = new transaction();
-die($sql);
-//			$transaction->queryAll($sql);
+//die($sql);
+			$transaction->queryAll($sql);
 		} else {
 			$this->ajax->addError(new AjaxError("Invalid reconcile transaction date (rest/reconcileTransactions)"));
 		}
