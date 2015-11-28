@@ -346,6 +346,8 @@ class budget_controller Extends rest_controller {
 					// if the transaction falls inside the interval then ....
 					// .... get the latest dated account balance for the interval - earlier balances will be overwritten with the latest
 					$output[$x]['accounts'][$balance->bank_account_id]['balance'] = $balance->bank_account_balance;
+					$output[$x]['accounts'][$balance->bank_account_id]['balance_date'] = $balance->transaction_date;
+					$output[$x]['accounts'][$balance->bank_account_id]['xxxxx'] = 1;
 					if (!empty($balance->reconciled_date)) {
 						if (empty($output[$x]['accounts'][$balance->bank_account_id]['reconciled_date'])
 								|| strtotime($balance->reconciled_date) > strtotime($output[$x]['accounts'][$balance->bank_account_id]['reconciled_date'])) {
@@ -356,9 +358,15 @@ class budget_controller Extends rest_controller {
 					if ($x > 0) {
 						// if the balance is not set then get from last interval
 						$output[$x]['accounts'][$balance->bank_account_id]['balance'] = $output[$x-1]['accounts'][$balance->bank_account_id]['balance'];
+						$output[$x]['accounts'][$balance->bank_account_id]['balance_date'] = $output[$x-1]['accounts'][$balance->bank_account_id]['balance_date'];
+						$output[$x]['accounts'][$balance->bank_account_id]['reconciled_date'] = $output[$x-1]['accounts'][$balance->bank_account_id]['reconciled_date'];
+						$output[$x]['accounts'][$balance->bank_account_id]['xxxxx'] = 2;
 					} else {
 						// this is first interval, get the last available balance for this account
-						$output[$x]['accounts'][$balance->bank_account_id]['balance'] = $this->getBankAccountBalance($sd, $balance->bank_account_id);
+						$accountBalance = $this->getBankAccountBalance($sd, $balance->bank_account_id);
+						$output[$x]['accounts'][$balance->bank_account_id]['balance_date'] = $accountBalance[0];
+						$output[$x]['accounts'][$balance->bank_account_id]['balance'] = $accountBalance[1];
+						$output[$x]['accounts'][$balance->bank_account_id]['xxxxx'] = 3;
 					}
 				}
 //				// save balance unadjusted for next interval (if  not set)

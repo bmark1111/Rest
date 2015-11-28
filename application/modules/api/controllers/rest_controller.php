@@ -99,6 +99,25 @@ class rest_controller Extends EP_Controller {
 	}
 
 	/**
+	 * @name resetbalances
+	 * @param type $resets
+	 */
+	protected function resetbalances($resets) {
+		$update = FALSE;
+		$resetBalances = $this->appdata->get('resetBalances');	// get existing resets
+		foreach ($resets as $account_id => $date) {
+			if (empty($resetBalances[$account_id]) || strtotime($date) < strtotime($resetBalances[$account_id]))
+			{	// found a lower date to reset to
+				$resetBalances[$account_id] = $date;
+				$update = TRUE;
+			}
+		}
+		if ($update) {
+			$this->appdata->set('resetBalances', $resetBalances);
+		}
+	}
+
+	/**
 	 * @name resetAccountBalances
 	 * @type {function}
 	 * @param {date} $original_transaction_date - original transaction date if it exists
@@ -165,9 +184,9 @@ class rest_controller Extends EP_Controller {
 		$transaction->row();
 
 		if ($transaction->numRows()) {
-			return $transaction->bank_account_balance;
+			return array($transaction->transaction_date, $transaction->bank_account_balance);
 		} else {
-			return 0;
+			return array(NULL, 0);;
 		}
 	}
 }
