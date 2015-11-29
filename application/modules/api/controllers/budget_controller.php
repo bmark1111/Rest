@@ -93,14 +93,14 @@ class budget_controller Extends rest_controller {
 			case 'bi-weekly':
 				$offset = $this->_getEndDay();
 				if ($interval == 0) {
-					$start_day = ($offset - ($this->budget_interval * ($this->budget_views+1)));					// - 'budget_views' entries and adjust for interval
-					$end_day = ($offset + ($this->budget_interval * ($this->budget_views-1)));						// + 'budget_views' entries and adjust for interval
+					$start_day = ($offset - ($this->budget_interval * ($this->budget_views + 1)));					// - 'budget_views' entries and adjust for interval
+					$end_day = ($offset + ($this->budget_interval * ($this->budget_views - 1)));					// + 'budget_views' entries and adjust for interval
 				} else if ($interval < 0) {
-					$start_day = ($offset + ($this->budget_interval * ($interval - $this->budget_views)));			// - 'budget_views' entries and adjust for interval
-					$end_day = ($offset + ($this->budget_interval * ($interval - $this->budget_views + 1)));		// + 'budget_views' entries and adjust for interval
+					$start_day = ($offset + ($this->budget_interval * ($interval - $this->budget_views - 1)));		// - 'budget_views' entries and adjust for interval
+					$end_day = ($offset + ($this->budget_interval * ($interval - $this->budget_views)));			// + 'budget_views' entries and adjust for interval
 				} else if ($interval > 0) {
-					$start_day = ($offset + ($this->budget_interval * ($interval + $this->budget_views - 1)));		// - 'budget_views' entries and adjust for interval
-					$end_day = ($offset + ($this->budget_interval * ($interval + $this->budget_views)));			// + 'budget_views' entries and adjust for interval
+					$start_day = ($offset + ($this->budget_interval * ($interval + $this->budget_views - 2)));		// - 'budget_views' entries and adjust for interval
+					$end_day = ($offset + ($this->budget_interval * ($interval + $this->budget_views - 1)));		// + 'budget_views' entries and adjust for interval
 				}
 				$sd = date('Y-m-d', strtotime($this->budget_start_date . " +" . $start_day . " Days"));
 				$ed = date('Y-m-d', strtotime($this->budget_start_date . " +" . $end_day . " Days"));
