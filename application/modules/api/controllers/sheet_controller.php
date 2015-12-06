@@ -5,7 +5,7 @@
 
 require_once ('rest_controller.php');
 
-class budget_controller Extends rest_controller {
+class sheet_controller Extends rest_controller {
 
 	protected $debug = TRUE;
 
@@ -201,6 +201,7 @@ class budget_controller Extends rest_controller {
 			$ied = $this->_getNextDate($isd, $this->budget_interval, $this->budget_interval_unit);
 			$ied = $this->_getNextDate($ied, -1, 'days');												// set the first interval end date
 
+//			$reconciled_date = NULL;
 			// now sort transactions into intervals
 			foreach ($transactions as $transaction) {
 				while (strtotime($transaction->transaction_date) > strtotime($ied)) {
@@ -209,6 +210,7 @@ class budget_controller Extends rest_controller {
 						$data['accounts'][$account->id] = array('bank_account_id' => $account->id, 'name' => $account->name, 'balance' => NULL);
 					}
 
+//					$data['reconciled_date']	= $reconciled_date;
 					$data['interval_beginning']	= date('c', strtotime($isd));
 					$data['interval_ending']	= date('c', strtotime($ied . " 23:59:59"));
 					if (empty($data['totals'])) {
@@ -228,6 +230,7 @@ class budget_controller Extends rest_controller {
 					$ied = $this->_getNextDate($ied, -1, 'days');
 				}
 
+//				$reconciled_date = $transaction->reconciled_date;
 				foreach ($transaction as $label => $value) {
 					if (substr($label, 0, 6) == 'total_') {
 						$index = explode('_', $label);
@@ -244,6 +247,7 @@ class budget_controller Extends rest_controller {
 		}
 
 		$data['running_total']		= $running_total;
+//		$data['reconciled_date']	= $reconciled_date;
 		$data['interval_beginning']	= date('c', strtotime($isd));
 		$data['interval_ending']	= date('c', strtotime($ied . " 23:59:59"));
 		// make accounts entry
