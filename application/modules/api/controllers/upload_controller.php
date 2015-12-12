@@ -58,20 +58,32 @@ class upload_controller Extends rest_controller
 		}
 		$transactions->limit($pagination_amount, $pagination_start);
 		$transactions->orderBy($sort, $sort_dir);
+		$transactions->orderBy('id', 'DESC');
 		$transactions->result();
 
 		$this->ajax->setData('total_rows', $transactions->foundRows());
 
+		$this->ajax->setData('pending_count', $pending_count);
+
 		if ($transactions->numRows()) {
-			$pending_count = 0;
-			foreach ($transactions as $transaction) {
-				isset($transaction->bank_account->bank);
-				if ($transaction->status == 0) {
-					$pending_count++;
-				}
-			}
-			$this->ajax->setData('pending_count', $pending_count);
+//			$pending_count = 0;
+//			foreach ($transactions as $transaction) {
+//				isset($transaction->bank_account->bank);
+//				if ($transaction->status == 0) {
+//					$pending_count++;
+//				}
+//			}
+//			$this->ajax->setData('pending_count', $pending_count);
 			$this->ajax->setData('result', $transactions);
+
+			$transactions = new transaction_upload();
+			$transactions->select('count(*) as count');
+			$transactions->whereNotDeleted();
+			$transactions->where('status', 0);
+			$transactions->row();
+			$this->ajax->setData('pending_count', $row->count);
+//print $transactions;
+//die;
 		} else {
 			$this->ajax->addError(new AjaxError("No uploads found"));
 		}

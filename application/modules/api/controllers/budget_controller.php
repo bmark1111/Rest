@@ -495,23 +495,23 @@ class budget_controller Extends rest_controller {
 		}
 
 		$transactions = new transaction();
-		$sql = "(SELECT T.transaction_date, T.type, T.description, T.notes, T.amount
+		$sql = "(SELECT T.id, T.transaction_date, T.type, T.description, T.notes, T.amount
 				FROM transaction T
 				LEFT JOIN category C1 ON C1.id = T.category_id
 				WHERE T.is_deleted = 0
-						AND T.category_id = " . $category_id . " AND T.category_id IS NOT NULL
+						AND T.category_id = " . $category_id . "
 						AND T.`transaction_date` >=  '" . $sd . "'
 						AND T.`transaction_date` <=  '" . $ed . "')
 			UNION
-				(SELECT T.transaction_date, T.type, T.description, TS.notes, TS.amount
+				(SELECT T.id, T.transaction_date, TS.type, T.description, TS.notes, TS.amount
 				FROM transaction T
-				LEFT JOIN transaction_split TS ON T.id = TS.transaction_id
+				LEFT JOIN transaction_split TS ON T.id = TS.transaction_id AND TS.is_deleted = 0
 				LEFT JOIN category C2 ON C2.id = TS.category_id
 				WHERE T.is_deleted = 0
 						AND TS.category_id = " . $category_id . " AND T.category_id IS NULL
 						AND T.`transaction_date` >=  '" . $sd . "'
 						AND T.`transaction_date` <=  '" . $ed . "')
-				ORDER BY transaction_date DESC";
+			ORDER BY transaction_date DESC";
 		$transactions->queryAll($sql);
 		if ($transactions->numRows()) {
 			foreach ($transactions as $transaction) {

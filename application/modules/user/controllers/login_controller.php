@@ -41,8 +41,11 @@ class login_controller extends EP_Controller {
 
 			$config = new configuration();
 			$config->getBy('name', 'budget_views');
-			$budget_views  = ($config->value * 2) + 1;	// show the current interval + forward and backward budget_views
+			$budget_views  = ($config->value * 2) + 2;	// show the current interval + forward and backward budget_views
 			$this->ajax->setData('budget_views', $budget_views);
+			$config->getBy('name', 'sheet_views');
+			$sheet_views  = ($config->value * 2);		// show the current interval + forward and backward sheet_views
+			$this->ajax->setData('sheet_views', $sheet_views);
 		} else {
 			$this->ajax->addError(new AjaxError('Your login credentials are incorrect'));
 		}
