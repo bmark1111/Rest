@@ -93,14 +93,14 @@ class budget_controller Extends rest_controller {
 			case 'bi-weekly':
 				$offset = $this->_getEndDay();
 				if ($interval == 0) {
-					$start_day = ($offset - ($this->budget_interval * ($this->budget_views + 1)));					// - 'budget_views' entries and adjust for interval
-					$end_day = ($offset + ($this->budget_interval * ($this->budget_views - 1)));					// + 'budget_views' entries and adjust for interval
+					$start_day = ($offset - ($this->budget_interval * ($this->budget_views)));					// - 'budget_views' entries and adjust for interval
+					$end_day = ($offset + ($this->budget_interval * ($this->budget_views)));					// + 'budget_views' entries and adjust for interval
 				} else if ($interval < 0) {
-					$start_day = ($offset + ($this->budget_interval * ($interval - $this->budget_views - 1)));		// - 'budget_views' entries and adjust for interval
-					$end_day = ($offset + ($this->budget_interval * ($interval - $this->budget_views)));			// + 'budget_views' entries and adjust for interval
+					$start_day = ($offset - ($this->budget_interval * ($interval - $this->budget_views)));		// - 'budget_views' entries and adjust for interval
+					$end_day = ($offset + ($this->budget_interval * ($interval - $this->budget_views)));		// + 'budget_views' entries and adjust for interval
 				} else if ($interval > 0) {
-					$start_day = ($offset + ($this->budget_interval * ($interval + $this->budget_views - 2)));		// - 'budget_views' entries and adjust for interval
-					$end_day = ($offset + ($this->budget_interval * ($interval + $this->budget_views - 1)));		// + 'budget_views' entries and adjust for interval
+					$start_day = ($offset - ($this->budget_interval * ($interval + $this->budget_views)));		// - 'budget_views' entries and adjust for interval
+					$end_day = ($offset + ($this->budget_interval * ($interval + $this->budget_views)));		// + 'budget_views' entries and adjust for interval
 				}
 				$sd = date('Y-m-d', strtotime($this->budget_start_date . " +" . $start_day . " Days"));
 				$ed = date('Y-m-d', strtotime($this->budget_start_date . " +" . $end_day . " Days"));
@@ -307,6 +307,7 @@ class budget_controller Extends rest_controller {
 						}
 					}
 				}
+
 				$interval['adjustments'] = $forecast[$x]['adjustments'];
 				if (empty($interval['running_total'])) {
 					$interval['running_total'] = $running_total;
@@ -341,18 +342,23 @@ class budget_controller Extends rest_controller {
 						&& strtotime($balance->transaction_date) <= strtotime(substr($intervalx['interval_ending'],0,10))) {
 					// if the transaction falls inside the interval then ....
 					// .... get the latest dated account balance for the interval - earlier balances will be overwritten with the latest
+					$output[$x]['balances'][$balance->bank_account_id] = $balance->bank_account_balance;	// save the unadjusted account balance
 					$output[$x]['accounts'][$balance->bank_account_id]['balance'] = $balance->bank_account_balance;
 					$output[$x]['accounts'][$balance->bank_account_id]['balance_date'] = $balance->transaction_date;
 					$output[$x]['accounts'][$balance->bank_account_id]['xxxxx'] = 1;
-					if (!empty($balance->reconciled_date)) {
-						if (empty($output[$x]['accounts'][$balance->bank_account_id]['reconciled_date'])
-								|| strtotime($balance->reconciled_date) > strtotime($output[$x]['accounts'][$balance->bank_account_id]['reconciled_date'])) {
-							$output[$x]['accounts'][$balance->bank_account_id]['reconciled_date'] = $balance->reconciled_date;
-						}
+					if (!empty($balance->reconciled_date)
+							&&
+						(empty($output[$x]['accounts'][$balance->bank_account_id]['reconciled_date'])
+								||
+						strtotime($balance->reconciled_date) > strtotime($output[$x]['accounts'][$balance->bank_account_id]['reconciled_date']))) {
+						$output[$x]['accounts'][$balance->bank_account_id]['reconciled_date'] = $balance->reconciled_date;
+					} else {
+						$output[$x]['accounts'][$balance->bank_account_id]['reconciled_date'] = $balance->reconciled_date;
 					}
 				} elseif (empty($output[$x]['accounts'][$balance->bank_account_id]['balance'])) {
 					if ($x > 0) {
 						// if the balance is not set then get from last interval
+						$output[$x]['balances'][$balance->bank_account_id] = $output[$x-1]['balances'][$balance->bank_account_id];	// save the unadjusted account balance
 						$output[$x]['accounts'][$balance->bank_account_id]['balance'] = $output[$x-1]['accounts'][$balance->bank_account_id]['balance'];
 						$output[$x]['accounts'][$balance->bank_account_id]['balance_date'] = $output[$x-1]['accounts'][$balance->bank_account_id]['balance_date'];
 						$output[$x]['accounts'][$balance->bank_account_id]['reconciled_date'] = $output[$x-1]['accounts'][$balance->bank_account_id]['reconciled_date'];
@@ -360,13 +366,13 @@ class budget_controller Extends rest_controller {
 					} else {
 						// this is first interval, get the last available balance for this account
 						$accountBalance = $this->getBankAccountBalance($sd, $balance->bank_account_id);
+						$output[$x]['balances'][$balance->bank_account_id] = $accountBalance[0];	// save the unadjusted account balance
 						$output[$x]['accounts'][$balance->bank_account_id]['balance_date'] = $accountBalance[0];
 						$output[$x]['accounts'][$balance->bank_account_id]['balance'] = $accountBalance[1];
+						$output[$x]['accounts'][$balance->bank_account_id]['reconciled_date'] = $accountBalance[2];
 						$output[$x]['accounts'][$balance->bank_account_id]['xxxxx'] = 3;
 					}
 				}
-//				// save balance unadjusted for next interval (if  not set)
-//				$output[$x]['balances'][$balance->bank_account_id] = $output[$x]['accounts'][$balance->bank_account_id]['balance'];
 			}
 
 /*			// now adjust the bank accounts with the forecasted adjustments
@@ -376,18 +382,17 @@ class budget_controller Extends rest_controller {
 				$now = time();
 				// only add forecast adjustment to current and future intervals
 				if (($now >= $sd && $now <= $ed) || $now < $ed) {
-					if (!empty($intervalx['adjustments'][$bank_account_id])) {
-						// adjust the unadjusted bank balance
+					if (!empty($output[$x]['adjustments'][$bank_account_id])) {
+						// adjust the account balance
 						if (!empty($output[$x]['balances'][$bank_account_id])) {
-							$output[$x]['accounts'][$bank_account_id]['balance'] = $output[$x]['balances'][$bank_account_id] + $intervalx['adjustments'][$bank_account_id];
+							$output[$x]['accounts'][$bank_account_id]['balance'] = $output[$x]['balances'][$bank_account_id] + $output[$x]['adjustments'][$bank_account_id];
 						} else {
-							$output[$x]['accounts'][$bank_account_id]['balance'] = $intervalx['adjustments'][$bank_account_id];
+							$output[$x]['accounts'][$bank_account_id]['balance'] = $output[$x]['adjustments'][$bank_account_id];
 						}
 					}
 				}
 			}
 */
-//			$output[$x]['accounts'] = array_values(array_filter($output[$x]['accounts']));	// compact the accounts array
 		}
 
 		// now put the bank balances in for each interval
@@ -395,25 +400,11 @@ class budget_controller Extends rest_controller {
 		$y = 0;
 		foreach ($output as $x => $intervalx) {
 			$output[$x]['accounts'] = array_values(array_filter($output[$x]['accounts']));	// compact the accounts array
-//			$forecast[$x]['accounts'] = $output[$x]['accounts'];
 			$_output[$y++] = $forecast[$x];
 			$_output[$y++] = $output[$x];
 		}
-//print_r($_output);
-//print_r($forecast);
-//die;
+
 		$this->ajax->setData('result', $_output);
-		
-//		// now get last reconciled date
-//		$transactions = new transaction();
-//		$transactions->select('MAX(transaction_date) as transaction_date, reconciled_date, bank_account_id', FALSE);
-//		$transactions->whereNotDeleted();
-////		$transactions->where('is_reconciled', 1);
-//		$transactions->where('reconciled_date IS NOT NULL');
-//		$transactions->groupBy('bank_account_id');
-//		$transactions->orderBy('transaction_date', 'DESC');
-//		$transactions->result();
-//		$this->ajax->setData('reconciled', $transactions);
 
 		$this->ajax->output();
 	}
@@ -499,7 +490,7 @@ class budget_controller Extends rest_controller {
 				FROM transaction T
 				LEFT JOIN category C1 ON C1.id = T.category_id
 				WHERE T.is_deleted = 0
-						AND T.category_id = " . $category_id . "
+						AND T.category_id = " . $category_id . " AND T.category_id IS NOT NULL
 						AND T.`transaction_date` >=  '" . $sd . "'
 						AND T.`transaction_date` <=  '" . $ed . "')
 			UNION
@@ -528,7 +519,13 @@ class budget_controller Extends rest_controller {
 		$xx =  time();
 		$yy = intval(strtotime($this->budget_start_date));
 		$xx = ($xx - $yy) / (24 * 60 * 60);
-		$xx = ceil($xx / $this->budget_interval);
+//echo "xx = $xx\n";
+//		$xx = ceil($xx / $this->budget_interval);
+//		$xx = floor($xx / $this->budget_interval);
+		$xx = intval($xx / $this->budget_interval);
+//echo "xx = $xx\n";
+//echo "budget_interval = ".$this->budget_interval."\n";
+//die($xx * $this->budget_interval);
 		return ($xx * $this->budget_interval);
 	}
 

@@ -184,9 +184,9 @@ class rest_controller Extends EP_Controller {
 		$transaction->row();
 
 		if ($transaction->numRows()) {
-			return array($transaction->transaction_date, $transaction->bank_account_balance);
+			return array($transaction->transaction_date, $transaction->bank_account_balance, $transaction->reconciled_date);
 		} else {
-			return array(NULL, 0);;
+			return array(NULL, 0, NULL);;
 		}
 	}
 }
