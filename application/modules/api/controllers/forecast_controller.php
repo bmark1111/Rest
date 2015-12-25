@@ -57,6 +57,7 @@ class forecast_controller Extends rest_controller
 		if ($forecasts->numRows()) {
 			foreach ($forecasts as $forecast) {
 				isset($forecast->category);
+				isset($forecast->bank_account);
 			}
 			$this->ajax->setData('result', $forecasts);
 		} else {

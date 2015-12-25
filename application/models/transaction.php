@@ -4,8 +4,8 @@
  * Brian Markham 04/04/2015
  *
 */
-class transaction extends Nagilum
-{
+class transaction extends Nagilum {
+
 	public $table = 'transaction';
 	
 	public $hasOne = array(	'category' => array('class' => 'category', 'joinField' => 'category_id'),
@@ -18,8 +18,7 @@ class transaction extends Nagilum
 	public $autoPopulateHasOne = FALSE;
 	public $autoPopulateHasMany = FALSE;
 
-	public function __construct($id = FALSE)
-	{
+	public function __construct($id = FALSE) {
 		parent::__construct($id);
 	}
 
