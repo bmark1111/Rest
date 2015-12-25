@@ -74,11 +74,11 @@ class CI_Form_validation {
 	 */
 	function set_rules($field, $label = '', $rules = '')
 	{
-		// No reason to set rules if we have no POST data
-		if (count($_POST) == 0)
-		{
-			return $this;
-		}
+//		// No reason to set rules if we have no POST data
+//		if (count($_POST) == 0)
+//		{
+//			return $this;
+//		}
 
 		// If an array was passed via the first parameter instead of indidual string
 		// values we cycle through it and recursively call this function.
@@ -282,10 +282,10 @@ class CI_Form_validation {
 	function run($group = '')
 	{
 		// Do we even have any data to process?  Mm?
-		if (count($_POST) == 0)
-		{
-			return FALSE;
-		}
+//		if (count($_POST) == 0)
+//		{
+//			return FALSE;
+//		}
 
 		// Does the _field_data array containing the validation rules exist?
 		// If not, we look to see if they were assigned via a config file
