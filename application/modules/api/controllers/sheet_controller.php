@@ -96,11 +96,11 @@ class sheet_controller Extends rest_controller {
 					$start_day = ($offset - ($this->budget_interval * ($this->sheet_views)));					// - 'sheet_views' entries and adjust for interval
 					$end_day = ($offset + ($this->budget_interval * ($this->sheet_views)));						// + 'sheet_views' entries and adjust for interval
 				} else if ($interval < 0) {
-					$start_day = ($offset - ($this->budget_interval * ($interval - $this->sheet_views)));		// - 'sheet_views' entries and adjust for interval
-					$end_day = ($offset + ($this->budget_interval * ($interval - $this->sheet_views)));			// + 'sheet_views' entries and adjust for interval
+					$start_day = ($offset - ($this->budget_interval * ($this->sheet_views - $interval)));		// - 'budget_views' entries and adjust for interval
+					$end_day = ($offset - ($this->budget_interval * ($this->sheet_views - $interval - 1)));	// + 'budget_views' entries and adjust for interval
 				} else if ($interval > 0) {
-					$start_day = ($offset - ($this->budget_interval * ($interval + $this->sheet_views)));		// - 'sheet_views' entries and adjust for interval
-					$end_day = ($offset + ($this->budget_interval * ($interval + $this->sheet_views)));			// + 'sheet_views' entries and adjust for interval
+					$start_day = ($offset + ($this->budget_interval * ($this->sheet_views + $interval - 1)));	// - 'budget_views' entries and adjust for interval
+					$end_day = ($offset + ($this->budget_interval * ($this->sheet_views + $interval)));		// + 'budget_views' entries and adjust for interval
 				}
 				$sd = date('Y-m-d', strtotime($this->budget_start_date . " +" . $start_day . " Days"));
 				$ed = date('Y-m-d', strtotime($this->budget_start_date . " +" . $end_day . " Days"));
@@ -482,23 +482,25 @@ class sheet_controller Extends rest_controller {
 		}
 
 		$transactions = new transaction();
-		$sql = "(SELECT T.id, T.transaction_date, T.type, T.description, T.notes, T.amount
+		$sql = "(SELECT T.id, T.transaction_date, T.type, T.description, T.notes, T.amount, A.name
 				FROM transaction T
 				LEFT JOIN category C1 ON C1.id = T.category_id
+				LEFT JOIN bank_account A ON A.id = T.bank_account_id
 				WHERE T.is_deleted = 0
 						AND T.category_id = " . $category_id . " AND T.category_id IS NOT NULL
 						AND T.`transaction_date` >=  '" . $sd . "'
 						AND T.`transaction_date` <=  '" . $ed . "')
 			UNION
-				(SELECT T.id, T.transaction_date, TS.type, T.description, TS.notes, TS.amount
+				(SELECT T.id, T.transaction_date, TS.type, T.description, TS.notes, TS.amount, A.name
 				FROM transaction T
+				LEFT JOIN bank_account A ON A.id = T.bank_account_id
 				LEFT JOIN transaction_split TS ON T.id = TS.transaction_id AND TS.is_deleted = 0
 				LEFT JOIN category C2 ON C2.id = TS.category_id
 				WHERE T.is_deleted = 0
 						AND TS.category_id = " . $category_id . " AND T.category_id IS NULL
 						AND T.`transaction_date` >=  '" . $sd . "'
 						AND T.`transaction_date` <=  '" . $ed . "')
-				ORDER BY transaction_date DESC";
+			ORDER BY transaction_date DESC, id DESC";
 		$transactions->queryAll($sql);
 		if ($transactions->numRows()) {
 			foreach ($transactions as $transaction) {
