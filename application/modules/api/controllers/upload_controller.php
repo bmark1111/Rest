@@ -1,12 +1,12 @@
 <?php
-/*
+/**
  * REST Upload Transaction controller
  */
 
 require_once ('rest_controller.php');
 
-class upload_controller Extends rest_controller
-{
+class upload_controller Extends rest_controller {
+
 	protected $debug = TRUE;
 
 	public function __construct() {
@@ -63,8 +63,6 @@ class upload_controller Extends rest_controller
 
 		$this->ajax->setData('total_rows', $transactions->foundRows());
 
-		$this->ajax->setData('pending_count', $pending_count);
-
 		if ($transactions->numRows()) {
 			foreach ($transactions as $transaction) {
 				isset($transaction->category);
@@ -72,13 +70,13 @@ class upload_controller Extends rest_controller
 			}
 			$this->ajax->setData('result', $transactions);
 
-			//  ow set the pending count
+			// now set the pending count
 			$transactions = new transaction_upload();
 			$transactions->select('count(*) as count');
 			$transactions->whereNotDeleted();
 			$transactions->where('status', 0);
 			$transactions->row();
-			$this->ajax->setData('pending_count', $row->count);
+			$this->ajax->setData('pending_count', $transaction->count);
 		} else {
 			$this->ajax->addError(new AjaxError("No uploads found"));
 		}
@@ -179,13 +177,10 @@ class upload_controller Extends rest_controller
 			$transaction->is_uploaded		= 1;
 			$transaction->save();
 
-//			// resets account balance - This tells front-end to display the 'Reset Account Balance" button
-//			$this->ajax->setData('reset_bank_account_id', $transaction->bank_account_id);
+//			// resets account balances
 			if ($transaction_date && strtotime($transaction_date) <= strtotime($transaction->transaction_date)) {
-//				$this->ajax->setData('reset_account_balances_date', $transaction_date);
 				$this->resetBalances(array($transaction->bank_account_id => $transaction_date));	// adjust the account balance from this transaction forward
 			} else {
-//				$this->ajax->setData('reset_account_balances_date', $transaction->transaction_date);
 				$this->resetBalances(array($transaction->bank_account_id => $transaction->transaction_date));	// adjust the account balance from this transaction forward
 			}
 		} else {
