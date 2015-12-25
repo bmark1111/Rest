@@ -96,9 +96,13 @@ class forecast_controller Extends rest_controller
 		$_POST = json_decode($input, TRUE);
 
 		// VALIDATION
+		$this->form_validation->set_rules('bank_account_id', 'Bank Account', 'required');
 		$this->form_validation->set_rules('first_due_date', 'Date', 'required');
 		$this->form_validation->set_rules('description', 'Description', 'required|max_length[150]');
 		$this->form_validation->set_rules('type', 'Type', 'required|alpha');
+		$this->form_validation->set_rules('every', 'Every', 'required');
+		$this->form_validation->set_rules('every_unit', 'Unit', 'required');
+		$this->form_validation->set_rules('category_id', 'Category', 'required');
 		$this->form_validation->set_rules('amount', 'Amount', 'required');
 
 		if ($this->form_validation->ajaxRun('') === FALSE) {

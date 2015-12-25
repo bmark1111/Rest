@@ -96,6 +96,8 @@ class transaction_controller Extends rest_controller {
 
 		$input = file_get_contents('php://input');
 		$_POST = json_decode($input, TRUE);
+print_r($_POST);
+die;
 
 		// VALIDATION
 		$this->form_validation->set_rules('bank_account_id', 'Bank Account', 'required');
@@ -181,7 +183,7 @@ class transaction_controller Extends rest_controller {
 		$this->ajax->output();
 	}
 
-	/*
+	/**
 	 * Checks if splits are entered, if not main category is a required field
 	 */
 	public function isValidCategory() {

@@ -108,8 +108,7 @@ class category_controller Extends rest_controller
 		$this->form_validation->set_rules('name', 'Name', 'required');
 		$this->form_validation->set_rules('order', 'Order', 'required|numeric');
 
-		if ($this->form_validation->ajaxRun('') === FALSE)
-		{
+		if ($this->form_validation->ajaxRun('') === FALSE) {
 			$this->ajax->output();
 		}
 
