@@ -293,13 +293,13 @@ class sheet_controller Extends rest_controller {
 				}
 				// check to see what current values need to be from the forecast
 				foreach ($interval['totals'] as $y => $intervalAmount) {
-					if ($intervalAmount == 0 && $forecast[$x]['totals'][$y] !== 0)
+					if ($intervalAmount == 0 && $forecast[$x]['totals'][$y] <> 0)
 					{	// if interval amount is zero and the forecast has a value then ... use the forecasted amount
 						$interval['totals'][$y] = floatval($forecast[$x]['totals'][$y]);			// use the forcasted amount
 						$interval['types'][$y] = '1';												// flag this as a forecast total
 						$interval['interval_total'] += floatval($forecast[$x]['totals'][$y]);		// update the interval total
 						$running_total += floatval($forecast[$x]['totals'][$y]);					// update the running total
-					} else if ($forecast[$x]['totals'][$y] !== 0) {
+					} elseif ($forecast[$x]['totals'][$y] !== 0) {
 						// we are not using this forecasted amount so deduct it from the forecasted account balance adjustment
 						// need to set the adjustment amount to zero
 						foreach ($forecast[$x]['adjustments'][$y] as $bank_account_id => $bank_account_balance) {
