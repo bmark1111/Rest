@@ -57,6 +57,7 @@ class transaction_controller Extends rest_controller {
 
 		if ($transactions->numRows()) {
 			foreach ($transactions as $transaction) {
+				isset($transaction->category);
 				isset($transaction->bank_account);
 			}
 			$this->ajax->setData('result', $transactions);
