@@ -35,8 +35,16 @@ header('Access-Control-Allow-Credentials: true');
 
 header('X-Powered-By: Budget 1.0', TRUE);
 
-define('APPLICATION', 'REST');
-
+$referer = explode('//', $_SERVER['HTTP_REFERER']);
+$referer = explode('.', $referer[1]);
+switch ($referer[1]) {
+	case 'budgettracker':
+		define('APPLICATION', 'PUBLIC');
+		break;
+	default:
+		define('APPLICATION', 'REST');
+		break;
+}
 /*
  *---------------------------------------------------------------
  * APPLICATION ENVIRONMENT

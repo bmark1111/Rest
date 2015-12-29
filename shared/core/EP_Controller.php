@@ -44,30 +44,26 @@ class EP_Controller extends MX_Controller
 	 *
 	 * @return - No Return Value
 	 */
-	public function __construct()
-	{
+	public function __construct() {
 		parent::__construct();
 
 		// this is loaded at this point so we can use it to determine what REST we're accessing
 		$this->load->helper('url');
 
-		if(APPLICATION != 'REST' && APPLICATION != 'CLI')
-		{
+		if(APPLICATION != 'REST' && APPLICATION != 'PUBLIC' && APPLICATION != 'CLI') {
 			throw new Exception('Invalid application requested');
 		}
 
 		// if the server environment variable has been set use it to override the environment
-		if (isset($_SERVER['ENVIRONMENT']))
-		{
+		if (isset($_SERVER['ENVIRONMENT'])) {
 			$this->sEnvironment = $_SERVER['ENVIRONMENT'];
 		}
 
-		if (isset($_SERVER['PREFIX']))
-		{
+		if (isset($_SERVER['PREFIX'])) {
 			$this->sPrefix = $_SERVER['PREFIX'] . '_';
 		}
 
-		// switch to the master DB
+/*		// switch to the master DB
 		$this->switchDatabase('budget_master');
 
 		// get the account trying to be accessed
@@ -77,6 +73,7 @@ class EP_Controller extends MX_Controller
 		// query the master database for the correct account information
 		$this->db->from('account');
 		$this->db->where('domain', $referer[0]);
+		$this->db->where('is_active', 1);
 		$oQuery = $this->db->get();
 
 		// make sure that only one result is found
@@ -91,7 +88,7 @@ class EP_Controller extends MX_Controller
 
 		// switch to the right account
 		$this->switchDatabase($oRow->domain . '_budget');
-
+*/
 		// set the current instance of the object to this if it's not already set
 		if(!isset(self::$_instance)) {
 			self::$_instance =& $this;
@@ -105,84 +102,135 @@ class EP_Controller extends MX_Controller
 			case 'CLI':
 				$this->load->_ci_library_paths[] = SHAREPATH;
 				break;
+			case 'PUBLIC':
+				// switch to the master DB
+				$this->switchDatabase('budget_master');
+				break;
 			case 'REST':
+				// switch to the master DB
+				$this->switchDatabase('budget_master');
+
+				// get the account trying to be accessed
+				$referer = explode('//', $_SERVER['HTTP_REFERER']);
+				$referer = explode('.', $referer[1]);
+
+				// query the master database for the correct account information
+				$this->db->from('account');
+				$this->db->where('domain', $referer[0]);
+				$this->db->where('is_active', 1);
+				$oQuery = $this->db->get();
+
+				// make sure that only one result is found
+				if ($oQuery->num_rows() != 1) {
+					throw new Exception('Account Not Found');
+				}
+				// actually get the result
+				$oRow = $oQuery->row();
+
+				// set the global account id
+				$this->nAccount = $oRow->id;
+
+				// switch to the right account
+				$this->switchDatabase($oRow->domain . '_budget');
 				break;
 		}
+
+//		// switch to the master DB
+//		$this->switchDatabase('budget_master');
 
 		// load any remaining libraries that are necessary
 		$this->loadLibraries();
 
-		if (APPLICATION == 'REST') {
-			$uri = explode('/', uri_string());
-			if (!empty($uri[0])) {
-				switch($uri[0]) {
-					case 'data':
-						if($this->input->is_ajax_request()) {
-							if (!empty($_SERVER['PHP_AUTH_USER']) && !empty($_SERVER['PHP_AUTH_PW']) && !empty($_SERVER['HTTP_TOKENID']) && !empty($_SERVER['HTTP_REFERER']) && !empty($_SERVER['REMOTE_ADDR'])) {
-								// query the database for the correct user & user session information
-								$this->db->select('user.id, user_session.id as session_id, user_session.expire, user_session.data');
-								$this->db->from('user_session');
-								$this->db->join('user', 'user.id = user_session.user_id', 'left');
-								$this->db->where('user_session.id', $_SERVER['HTTP_TOKENID']);
-								$this->db->where('user_session.http_referrer', $_SERVER['HTTP_REFERER']);
-								$this->db->where('user_session.ip_address', $_SERVER['REMOTE_ADDR']);
-								$this->db->where('user.login', $_SERVER['PHP_AUTH_USER']);
-								$this->db->where('user.pass', md5($_SERVER['PHP_AUTH_PW'] . $this->config->item('encryption_key')));
-								$oQuery = $this->db->get();
-								// make sure that only one result is found
-								if ($oQuery->num_rows() != 1) {
-									$this->ajax->set_header("You are not authorzed - 001", '401');
-									exit;
-								}
-								$uSession = $oQuery->row();
-
-								// check if session has expired
-								if (time() > strtotime($uSession->expire)) {
-									$this->ajax->set_header("EXPIRED", '401');
-									exit;
-								}
-
-								// update the user_session 'expire' to 30 mins past now
-								$data = array(
-									'expire' => date('Y-m-d H:i:s', strtotime('+30 MINS'))
-								);
-								$this->db->where('id', $uSession->session_id);
-								$this->db->update('user_session', $data); 
-
-								// set the logged in user
-								$this->nUserId = $uSession->id;
-								// set the user session data
-								$this->nUserData = $uSession->data;
+		$uri = explode('/', uri_string());
+		if (APPLICATION == 'REST' && !empty($uri[0])) {
+			switch($uri[0]) {
+				case 'data':
+					// this must be secure access - check auth, token, referer & remote_addr
+					if($this->input->is_ajax_request()) {
+						if (!empty($_SERVER['PHP_AUTH_USER']) && !empty($_SERVER['PHP_AUTH_PW']) && !empty($_SERVER['HTTP_TOKENID'])
+								&&
+							!empty($_SERVER['HTTP_REFERER']) && !empty($_SERVER['REMOTE_ADDR'])) {
+							// query the database for the correct user & user session information
+							$this->db->select('user.id, user_session.id as session_id, user_session.expire, user_session.data');
+							$this->db->from('user_session');
+							$this->db->join('user', 'user.id = user_session.user_id', 'left');
+							$this->db->where('user_session.id', $_SERVER['HTTP_TOKENID']);
+							$this->db->where('user_session.http_referrer', $_SERVER['HTTP_REFERER']);
+							$this->db->where('user_session.ip_address', $_SERVER['REMOTE_ADDR']);
+							$this->db->where('user.login', $_SERVER['PHP_AUTH_USER']);
+							$this->db->where('user.pass', md5($_SERVER['PHP_AUTH_PW'] . $this->config->item('encryption_key')));
+							$oQuery = $this->db->get();
+							// make sure that only one result is found
+							if ($oQuery->num_rows() != 1) {
+								$this->ajax->set_header("You are not authorzed - 001", '401');
+								exit;
 							}
+							$uSession = $oQuery->row();
+
+							// check if session has expired
+							if (time() > strtotime($uSession->expire)) {
+								$this->ajax->set_header("EXPIRED", '401');
+								exit;
+							}
+
+							// update the user_session 'expire' to 30 mins past now
+							$data = array(
+								'expire' => date('Y-m-d H:i:s', strtotime('+30 MINS'))
+							);
+							$this->db->where('id', $uSession->session_id);
+							$this->db->update('user_session', $data); 
+
+							// set the logged in user
+							$this->nUserId = $uSession->id;
+							// set the user session data
+							$this->nUserData = $uSession->data;
 						} else {
 							$this->ajax->set_header("Not Found", '404');
 							exit;
 						}
-						break;
-					case 'upload':
-						break;
-					case 'login':
-					case 'logout':
-						break;
-					default:
-						if($this->input->is_ajax_request()) {
-							$this->ajax->set_header("You are not authorzed - 002", '401');
-							exit;
-						} else {
-							$this->ajax->set_header("Not Found", '404');
-							exit;
-						}
-						break;
-				}
-			} else {
-				if($this->input->is_ajax_request()) {
-					$this->ajax->set_header("You are not authorzed - 003", '401');
-					exit;
-				} else {
+					} else {
+						$this->set_header("Not Found", '404');
+						exit;
+					}
+					break;
+				case 'upload':
+					break;
+				case 'login':
+					break;
+				default:
 					$this->ajax->set_header("Not Found", '404');
 					exit;
-				}
+					break;
 			}
+		} elseif (APPLICATION == 'PUBLIC' && !empty($uri[0])) {
+//print_r($_SERVER);
+print_r($uri);
+die('PUBLIC');
+			switch($uri[0]) {
+				case 'register':
+					if($this->input->is_ajax_request()) {
+						if (!empty($_SERVER['HTTP_REFERER']) && $_SERVER['HTTP_REFERER'] == 'http://budgettracker.loc/') {
+							// lets try to register
+							
+						} else {
+							$this->ajax->set_header("Not Found", '404');
+							exit;
+						}
+					} else {
+						$this->set_header("Not Found", '404');
+						exit;
+					}
+					break;
+				default:
+					$this->ajax->set_header("Not Found", '404');
+					exit;
+					break;
+			}
+		} elseif (APPLICATION == 'CLI') {
+			// ????????
+		} else {
+			$this->ajax->set_header("Not Found", '404');
+			exit;
 		}
 /*
 		elseif(APPLICATION == 'XXXX')

@@ -209,7 +209,7 @@ function showSub(subname)
 					<tr class="even">
 						<td class="label">Account:</td>
 						<td><?php
-						if($aErrorInfo['account_id'] && APPLICATION == 'PBIO')
+						if($aErrorInfo['account_id'] && APPLICATION == 'REST')
 						{
 							$account = new account($aErrorInfo['account_id']);
 							echo $account->name;
@@ -220,7 +220,7 @@ function showSub(subname)
 						<td class="label">User:</td>
 						<td class="user">
 						<?php
-						if($aErrorInfo['user_id'] && APPLICATION == 'PBIO')
+						if($aErrorInfo['user_id'] && APPLICATION == 'REST')
 						{
 							$user = new user($aErrorInfo['user_id']);
 							echo $user->first_name . ' ' . $user->last_name;

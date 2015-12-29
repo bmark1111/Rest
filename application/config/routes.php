@@ -42,11 +42,12 @@ $route['default_controller'] = "api";
 $route['404_override'] = '';
 
 $route['login']									= "user/login";						// GET - login
+$route['register']								= "user/register";					// POST - register
+
 $route['data/logout']							= "user/logout";					// POST - logout
 
 $route['data/budget/load']						= "api/budget/load";				// GET - load dashboard transactions
 $route['data/budget/these']						= "api/budget/these";				// GET - load dashboard transactions for interval and category
-//$route['data/budget/bankBalances']				= "api/budget/bankBalances";		// GET - load bank balances for period
 
 $route['data/sheet/load']						= "api/sheet/load";					// GET - load sheet transactions
 
