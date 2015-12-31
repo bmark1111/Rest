@@ -47,11 +47,6 @@ class EP_Controller extends MX_Controller
 	public function __construct() {
 		parent::__construct();
 
-		// check for ajax request
-		if(!$this->input->is_ajax_request()) {
-			throw new Exception('Invalid request');
-		}
-
 		// this is loaded at this point so we can use it to determine what REST we're accessing
 		$this->load->helper('url');
 
@@ -143,6 +138,11 @@ class EP_Controller extends MX_Controller
 		if (APPLICATION == 'REST' && !empty($uri[0])) {
 			switch($uri[0]) {
 				case 'data':
+					// check for ajax request
+					if(!$this->input->is_ajax_request()) {
+						$this->set_header("Not Found", '404');
+					}
+
 					// this must be secure access - check auth, token, referer & remote_addr
 					if (!empty($_SERVER['PHP_AUTH_USER']) && !empty($_SERVER['PHP_AUTH_PW']) && !empty($_SERVER['HTTP_TOKENID'])
 							&&
@@ -189,7 +189,8 @@ class EP_Controller extends MX_Controller
 				case 'upload':
 					break;
 				case 'login':
-					if (!empty($_SERVER['PHP_AUTH_USER']) && !empty($_SERVER['PHP_AUTH_PW'])) {
+					// check for ajax request
+					if($this->input->is_ajax_request() && !empty($_SERVER['PHP_AUTH_USER']) && !empty($_SERVER['PHP_AUTH_PW'])) {
 						// ok
 					} else {
 						$this->ajax->set_header("Not Found", '404');
@@ -197,32 +198,45 @@ class EP_Controller extends MX_Controller
 					}
 					break;
 				default:
-					$this->ajax->set_header("Not Found", '404');
+					// check for ajax request
+					if(!$this->input->is_ajax_request()) {
+						$this->set_header("Not Found", '404');
+					} else {
+						$this->ajax->set_header("Not Found", '404');
+					}
 					exit;
 					break;
 			}
 		} elseif (APPLICATION == 'PUBLIC' && !empty($uri[0])) {
 print_r($uri);
 die('PUBLIC');
-			switch($uri[0]) {
-				case 'register':
-					if (!empty($_SERVER['HTTP_REFERER']) && $_SERVER['HTTP_REFERER'] == 'http://budgettracker.loc/') {
-						// lets try to register
+			if(!$this->input->is_ajax_request()) {
+				$this->set_header("Not Found", '404');
+			} else {
+				switch($uri[0]) {
+					case 'register':
+						if (!empty($_SERVER['HTTP_REFERER']) && $_SERVER['HTTP_REFERER'] == 'http://budgettracker.loc/') {
+							// lets try to register
 
-					} else {
+						} else {
+							$this->ajax->set_header("Not Found", '404');
+							exit;
+						}
+						break;
+					default:
 						$this->ajax->set_header("Not Found", '404');
 						exit;
-					}
-					break;
-				default:
-					$this->ajax->set_header("Not Found", '404');
-					exit;
-					break;
+						break;
+				}
 			}
 		} elseif (APPLICATION == 'CLI') {
 			// ????????
 		} else {
-			$this->ajax->set_header("Not Found", '404');
+			if(!$this->input->is_ajax_request()) {
+				$this->set_header("Not Found", '404');
+			} else {
+				$this->ajax->set_header("Not Found", '404');
+			}
 			exit;
 		}
 /*
