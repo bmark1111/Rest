@@ -99,10 +99,10 @@ class rest_controller Extends EP_Controller {
 	}
 
 	/**
-	 * @name resetbalances
+	 * @name resetBalances
 	 * @param type $resets
 	 */
-	protected function resetbalances($resets) {
+	protected function resetBalances($resets) {
 		$update = FALSE;
 		$resetBalances = $this->appdata->get('resetBalances');	// get existing resets
 		foreach ($resets as $account_id => $date) {

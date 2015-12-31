@@ -177,7 +177,6 @@ class transaction_controller Extends rest_controller {
 			}
 			$resetBalances[$transaction->bank_account_id] = $date;
 			$this->resetBalances($resetBalances);
-//			$this->adjustAccountBalances($transaction->transaction_date, $transaction_date, $transaction->bank_account_id);
 		}
 		$this->ajax->output();
 	}
