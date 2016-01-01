@@ -225,12 +225,9 @@ class EP_Controller extends MX_Controller
 //			}
 //		} else
 		if (APPLICATION == 'PUBLIC' && !empty($uri[0])) {
-			if(!$this->input->is_ajax_request()) {
-				$this->set_header("Not Found", '404');
-				exit;
-			}
 			switch($uri[0]) {
 				case 'data':
+				case 'upload':
 					// check for ajax request
 					if(!$this->input->is_ajax_request()) {
 						$this->set_header("Not Found", '404');
@@ -290,6 +287,11 @@ class EP_Controller extends MX_Controller
 					}
 					break;
 				case 'register':
+					// check for ajax request
+					if(!$this->input->is_ajax_request()) {
+						$this->set_header("Not Found", '404');
+						exit;
+					}
 					if (!empty($_SERVER['HTTP_REFERER']) && $_SERVER['HTTP_REFERER'] === 'http://budgettracker.loc/') {
 						// lets try to register
 					} else {
@@ -297,11 +299,16 @@ class EP_Controller extends MX_Controller
 						exit;
 					}
 					break;
-				case 'upload':
+				case 'uploadx':
+print_r($_SERVER);die;
 					break;
 				case 'login':
 					// check for ajax request
-					if($this->input->is_ajax_request() && !empty($_SERVER['PHP_AUTH_USER']) && !empty($_SERVER['PHP_AUTH_PW'])) {
+					if(!$this->input->is_ajax_request()) {
+						$this->set_header("Not Found", '404');
+						exit;
+					}
+					if(!empty($_SERVER['PHP_AUTH_USER']) && !empty($_SERVER['PHP_AUTH_PW'])) {
 						$input = file_get_contents('php://input');
 						$_POST = json_decode($input, TRUE);
 
