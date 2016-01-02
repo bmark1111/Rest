@@ -26,6 +26,11 @@ class dashboard_controller Extends rest_controller {
 			$this->ajax->output();
 		}
 
+		$year = $this->input->get('year');
+		if ($year < 2015 || !is_numeric($year)) {
+			$this->ajax->addError(new AjaxError("Invalid year"));
+			$this->ajax->output();
+		}
 		$categories = new category();
 		$categories->whereNotDeleted();
 		$categories->orderBy('order');
@@ -49,7 +54,7 @@ class dashboard_controller Extends rest_controller {
 		$sql[] = implode(',', $select);
 		$sql[] = "FROM transaction T";
 		$sql[] = "LEFT JOIN transaction_split TS ON TS.transaction_id = T.id AND TS.is_deleted = 0";
-		$sql[] = "WHERE YEAR(transaction_date) = '" . date('Y') . "' AND T.is_deleted = 0";
+		$sql[] = "WHERE YEAR(transaction_date) = '" . $year . "' AND T.is_deleted = 0";
 
 		$transactions = new transaction();
 		$transactions->query(implode(' ', $sql));
