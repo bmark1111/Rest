@@ -84,6 +84,7 @@ $route['data/category/save']					= "api/category/save";				// POST - save catego
 $route['data/category']							= "api/category";					// GET - get categories
 
 $route['data/setting/load']						= "api/setting/load";				// GET - load settings
+$route['data/setting/save']						= "api/setting/save";				// POST - save settings
 
 $route['upload/(:num)/(:num)']					= "upload/index/$1/$2";				// Upload transactions
 

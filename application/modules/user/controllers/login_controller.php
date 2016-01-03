@@ -32,12 +32,12 @@ class login_controller extends EP_Controller {
 
 			$this->ajax->setData('account_id', $this->nAccount);
 
-			$config = new configuration();
-			$config->getBy('name', 'budget_views');
-			$budget_views  = ($config->value * 2) + 2;	// show the current interval + forward and backward budget_views
+			$settings = new setting();
+			$settings->getBy('name', 'budget_views');
+			$budget_views  = ($settings->value * 2) + 2;	// show the current interval + forward and backward budget_views
 			$this->ajax->setData('budget_views', $budget_views);
-			$config->getBy('name', 'sheet_views');
-			$sheet_views  = ($config->value * 2);		// show the current interval + forward and backward sheet_views
+			$settings->getBy('name', 'sheet_views');
+			$sheet_views  = ($settings->value * 2);		// show the current interval + forward and backward sheet_views
 			$this->ajax->setData('sheet_views', $sheet_views);
 
 			// switch to the master DB

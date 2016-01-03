@@ -4,8 +4,8 @@
  * Brian Markham 04/09/2015
  *
 */
-class bank_account extends Nagilum
-{
+class bank_account extends Nagilum {
+
 	public $table = 'bank_account';
 
 	public $hasOne = array('bank' => array('class' => 'bank', 'joinField' => 'bank_id')
@@ -14,8 +14,7 @@ class bank_account extends Nagilum
 	public $autoPopulateHasOne = FALSE;
 	public $autoPopulateHasMany = FALSE;
 
-	public function __construct($id = FALSE)
-	{
+	public function __construct($id = FALSE) {
 		parent::__construct($id);
 	}
 

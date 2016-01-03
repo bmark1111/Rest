@@ -1,12 +1,12 @@
 <?php
 /*
- * category.php
- * Brian Markham 04/04/2015
+ * setting.php
+ * Brian Markham 04/03/2015
  *
 */
-class category extends Nagilum {
+class setting extends Nagilum {
 
-	public $table = 'category';
+	public $table = 'setting';
 
 	public $autoPopulateHasOne = FALSE;
 	public $autoPopulateHasMany = FALSE;
