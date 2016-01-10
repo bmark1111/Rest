@@ -36,9 +36,14 @@ class login_controller extends EP_Controller {
 			$settings->getBy('name', 'budget_views');
 			$budget_views  = ($settings->value * 2) + 2;	// show the current interval + forward and backward budget_views
 			$this->ajax->setData('budget_views', $budget_views);
+
 			$settings->getBy('name', 'sheet_views');
-			$sheet_views  = ($settings->value * 2);		// show the current interval + forward and backward sheet_views
+			$sheet_views  = ($settings->value * 2);			// show the current interval + forward and backward sheet_views
 			$this->ajax->setData('sheet_views', $sheet_views);
+
+			$settings->getBy('name', 'budget_mode');
+			$budget_mode  = $settings->value;				// show the budget_mode
+			$this->ajax->setData('budget_mode', $budget_mode);
 
 			// switch to the master DB
 			$this->switchDatabase('budget_master');

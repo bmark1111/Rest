@@ -239,7 +239,7 @@ class EP_Controller extends MX_Controller
 							&&
 						!empty($_SERVER['HTTP_REFERER']) && !empty($_SERVER['REMOTE_ADDR'])) {
 						// query the database for the correct user & user session information
-						$this->db->select('user_session.user_id, user_session.id as session_id, user_session.expire, account.db_suffix_name');
+						$this->db->select('user_session.user_id, user_session.id as session_id, user_session.expire, user_session.account_id, account.db_suffix_name');
 						$this->db->from('user_session');
 						$this->db->join('account', 'account.id = user_session.account_id', 'left');
 						$this->db->where('user_session.id', $_SERVER['HTTP_TOKENID']);
@@ -271,7 +271,7 @@ class EP_Controller extends MX_Controller
 						$this->db->update('user_session', $data); 
 
 						// set the global account id
-						$this->nAccount = $oRow->id;
+						$this->nAccount = $uSession->account_id;
 
 						// set the global logged in user
 						$this->nUserId = $uSession->user_id;
