@@ -324,7 +324,7 @@ class sheet_controller Extends rest_controller {
 					if ($forecast[$x]['totals'][$y] !== NULL) {
 						// if forecast has a value then ... add the forecasted amount in
 						$interval['totals'][$y]		+= floatval($forecast[$x]['totals'][$y]);		// update the category total with the  forcasted
-						$interval['types'][$y]		= '1';											// flag this total has a forecast in it
+						$interval['types'][$y]		= ($intervalAmount === NULL) ? '1': '2';		// flag this total has a forecast in it
 						$interval['interval_total']	+= floatval($forecast[$x]['totals'][$y]);		// update the interval total
 						$running_total				+= floatval($forecast[$x]['totals'][$y]);		// update the running total
 //					} else {
@@ -381,7 +381,7 @@ class sheet_controller Extends rest_controller {
 						(empty($output[$x]['accounts'][$balance->bank_account_id]['reconciled_date'])
 								||
 						strtotime($balance->reconciled_date) > strtotime($output[$x]['accounts'][$balance->bank_account_id]['reconciled_date']))) {
-							$output[$x]['accounts'][$balance->bank_account_id]['reconciled_date'] = $balance->reconciled_date;
+						$output[$x]['accounts'][$balance->bank_account_id]['reconciled_date'] = $balance->reconciled_date;
 					} else {
 						$output[$x]['accounts'][$balance->bank_account_id]['reconciled_date'] = $balance->reconciled_date;
 					}
@@ -396,7 +396,7 @@ class sheet_controller Extends rest_controller {
 					} else {
 						// this is first interval, get the last available balance for this account
 						$accountBalance = $this->getBankAccountBalance($sd, $balance->bank_account_id);
-						$output[$x]['balances'][$balance->bank_account_id] = $accountBalance[0];	// save the unadjusted account balance
+						$output[$x]['balances'][$balance->bank_account_id] = $accountBalance[1];	// save the unadjusted account balance
 						$output[$x]['accounts'][$balance->bank_account_id]['balance_date'] = $accountBalance[0];
 						$output[$x]['accounts'][$balance->bank_account_id]['balance'] = $accountBalance[1];
 						$output[$x]['accounts'][$balance->bank_account_id]['reconciled_date'] = $accountBalance[2];
@@ -407,11 +407,29 @@ class sheet_controller Extends rest_controller {
 
 			// now adjust the bank accounts with the forecasted adjustments
 			foreach ($output[$x]['accounts'] as $bank_account_id => $account) {
-				$sd = strtotime($intervalx['interval_beginning']);
-				$ed = strtotime($intervalx['interval_ending']);
+				// make sure we have a balance
+				if (empty($account['balance'])) {
+					if ($x > 0) {
+						// if the balance is not set then get from last interval
+						$output[$x]['balances'][$bank_account_id] = $output[$x-1]['balances'][$bank_account_id];	// save the unadjusted account balance
+						$output[$x]['accounts'][$bank_account_id]['balance'] = $output[$x-1]['accounts'][$bank_account_id]['balance'];
+						$output[$x]['accounts'][$bank_account_id]['balance_date'] = $output[$x-1]['accounts'][$bank_account_id]['balance_date'];
+						$output[$x]['accounts'][$bank_account_id]['reconciled_date'] = $output[$x-1]['accounts'][$bank_account_id]['reconciled_date'];
+						$output[$x]['accounts'][$bank_account_id]['xxxxx'] = 4;
+					} else {
+						$accountBalance = $this->getBankAccountBalance(date('Y-m-d', strtotime($intervalx['interval_beginning'])), $bank_account_id);
+						$output[$x]['balances'][$bank_account_id] = $accountBalance[1];								// save the unadjusted account balance
+						$output[$x]['accounts'][$bank_account_id]['balance_date'] = $accountBalance[0];
+						$output[$x]['accounts'][$bank_account_id]['balance'] = $accountBalance[1];
+						$output[$x]['accounts'][$bank_account_id]['reconciled_date'] = $accountBalance[2];
+						$output[$x]['accounts'][$bank_account_id]['xxxxx'] = 5;
+					}
+				}
+				$isd = strtotime($intervalx['interval_beginning']);
+				$ied = strtotime($intervalx['interval_ending']);
 				$now = time();
 				// only add forecast adjustment to current and future intervals
-				if (($now >= $sd && $now <= $ed) || $now < $ed) {
+				if (($now >= $isd && $now <= $ied) || $now < $ied) {
 					if (!empty($output[$x]['adjustments'][$bank_account_id])) {
 						// adjust the account balance
 						if (!empty($output[$x]['balances'][$bank_account_id])) {

@@ -182,11 +182,10 @@ class rest_controller Extends EP_Controller {
 		$transaction->orderBy('transaction_date', 'DESC');
 		$transaction->limit(1);
 		$transaction->row();
-
 		if ($transaction->numRows()) {
 			return array($transaction->transaction_date, $transaction->bank_account_balance, $transaction->reconciled_date);
 		} else {
-			return array(NULL, 0, NULL);;
+			return array(NULL, 0, NULL);
 		}
 	}
 }

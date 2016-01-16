@@ -397,7 +397,7 @@ class budget_controller Extends rest_controller {
 					} else {
 						// this is first interval, get the last available balance for this account
 						$accountBalance = $this->getBankAccountBalance($sd, $balance->bank_account_id);
-						$output[$x]['balances'][$balance->bank_account_id] = $accountBalance[0];	// save the unadjusted account balance
+						$output[$x]['balances'][$balance->bank_account_id] = $accountBalance[1];	// save the unadjusted account balance
 						$output[$x]['accounts'][$balance->bank_account_id]['balance_date'] = $accountBalance[0];
 						$output[$x]['accounts'][$balance->bank_account_id]['balance'] = $accountBalance[1];
 						$output[$x]['accounts'][$balance->bank_account_id]['reconciled_date'] = $accountBalance[2];
@@ -406,11 +406,27 @@ class budget_controller Extends rest_controller {
 				}
 			}
 
-/*			// now adjust the bank accounts with the forecasted adjustments
+			// now adjust the bank accounts with the forecasted adjustments
 			foreach ($output[$x]['accounts'] as $bank_account_id => $account) {
-				$sd = strtotime($intervalx['interval_beginning']);
-				$ed = strtotime($intervalx['interval_ending']);
-				$now = time();
+				// make sure we have a balance
+				if (empty($account['balance'])) {
+					if ($x > 0) {
+						// if the balance is not set then get from last interval
+						$output[$x]['balances'][$bank_account_id] = $output[$x-1]['balances'][$bank_account_id];	// save the unadjusted account balance
+						$output[$x]['accounts'][$bank_account_id]['balance'] = $output[$x-1]['accounts'][$bank_account_id]['balance'];
+						$output[$x]['accounts'][$bank_account_id]['balance_date'] = $output[$x-1]['accounts'][$bank_account_id]['balance_date'];
+						$output[$x]['accounts'][$bank_account_id]['reconciled_date'] = $output[$x-1]['accounts'][$bank_account_id]['reconciled_date'];
+						$output[$x]['accounts'][$bank_account_id]['xxxxx'] = 4;
+					} else {
+						$accountBalance = $this->getBankAccountBalance(date('Y-m-d', strtotime($intervalx['interval_beginning'])), $bank_account_id);
+						$output[$x]['balances'][$bank_account_id] = $accountBalance[1];								// save the unadjusted account balance
+						$output[$x]['accounts'][$bank_account_id]['balance_date'] = $accountBalance[0];
+						$output[$x]['accounts'][$bank_account_id]['balance'] = $accountBalance[1];
+						$output[$x]['accounts'][$bank_account_id]['reconciled_date'] = $accountBalance[2];
+						$output[$x]['accounts'][$bank_account_id]['xxxxx'] = 5;
+					}
+				}
+/*
 				// only add forecast adjustment to current and future intervals
 				if (($now >= $sd && $now <= $ed) || $now < $ed) {
 					if (!empty($output[$x]['adjustments'][$bank_account_id])) {
@@ -422,8 +438,8 @@ class budget_controller Extends rest_controller {
 						}
 					}
 				}
-			}
 */
+			}
 		}
 
 		// now put the bank balances in for each interval
