@@ -30,7 +30,7 @@ class sheet_controller Extends rest_controller {
 				$this->budget_interval = 14;
 				$this->budget_interval_unit = 'Days';
 				break;
-			case 'semi-monthy':
+			case 'semi-monthly':
 				$this->budget_interval = 1;
 				$this->budget_interval_unit = 'Months';
 				break;
@@ -39,21 +39,21 @@ class sheet_controller Extends rest_controller {
 				$this->budget_interval_unit = 'Months';
 				break;
 			default:
-				$this->ajax->addError(new AjaxError("Invalid budget_mode setting (budget controller)"));
+				$this->ajax->addError(new AjaxError("Invalid budget_mode setting (sheet controller)"));
 				$this->ajax->output();
 		}
 	}
 
 	public function index() {
 //		$this->ajax->set_header("Forbidden", '403');
-		$this->ajax->addError(new AjaxError("403 - Forbidden (budget/index)"));
+		$this->ajax->addError(new AjaxError("403 - Forbidden (sheet/index)"));
 		$this->ajax->output();
 	}
 
 	public function load() {
 		if ($_SERVER['REQUEST_METHOD'] != 'GET') {
 //			$this->ajax->set_header("Forbidden", '403');
-			$this->ajax->addError(new AjaxError("403 - Forbidden (budget/load)"));
+			$this->ajax->addError(new AjaxError("403 - Forbidden (sheet/load)"));
 			$this->ajax->output();
 		}
 
@@ -64,7 +64,7 @@ class sheet_controller Extends rest_controller {
 
 		$interval = $this->input->get('interval');
 		if (!is_numeric($interval)) {
-			$this->ajax->addError(new AjaxError("Invalid interval - budget/load"));
+			$this->ajax->addError(new AjaxError("Invalid interval - sheet/load"));
 			$this->ajax->output();
 		}
 
@@ -149,7 +149,7 @@ class sheet_controller Extends rest_controller {
 				$sql[] = "ORDER BY YEAR(T.transaction_date), MONTH(T.transaction_date) ASC";
 				break;
 			default:
-				$this->ajax->addError(new AjaxError("Invalid budget_mode setting (budget/load)"));
+				$this->ajax->addError(new AjaxError("Invalid budget_mode setting (sheet/load)"));
 				$this->ajax->output();
 		}
 
