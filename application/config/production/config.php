@@ -368,8 +368,8 @@ $config['proxy_ips'] = '';
 |
 */
 
-$config['css_path'] = '/css/';
-$config['js_path'] = '/js/';
+//$config['css_path'] = '/css/';
+//$config['js_path'] = '/js/';
 
 /*
 |---------------------------------------------------------------------------
@@ -380,9 +380,8 @@ $config['js_path'] = '/js/';
 |
 */
 
-$config['show_prerelease'] = FALSE;
-$config['show_cert'] = FALSE;
-
+//$config['show_prerelease'] = FALSE;
+//$config['show_cert'] = FALSE;
 
 /*
 |---------------------------------------------------------------------------
@@ -405,27 +404,25 @@ $config['controller_suffix'] = '_controller';
 */
 $config['enable_profiler'] = FALSE;
 
-//$config['database']['hostname'] = '172.31.50.41';
-//$config['database']['username'] = 'helix';
-//$config['database']['password'] = 'e.q88NM7>fF44DW=2J';
-//$config['database']['database'] = 'helix';
-//$config['database']['dbdriver'] = 'mysqli';
-//$config['database']['dbprefix'] = '';
-//$config['database']['pconnect'] = TRUE;
-//$config['database']['db_debug'] = TRUE;
-//$config['database']['cache_on'] = FALSE;
-//$config['database']['cachedir'] = '';
-//$config['database']['char_set'] = 'utf8';
-//$config['database']['dbcollat'] = 'utf8_general_ci';
-//$config['database']['swap_pre'] = '';
-//$config['database']['autoinit'] = FALSE; // this is set to false as we're going to make sure the database exists before connecting to it
-//$config['database']['stricton'] = FALSE;
+$config['database']['hostname'] = 'localhost';
+$config['database']['username'] = 'budget';
+$config['database']['password'] = 'budget';
+//$config['database']['database'] = 'bdm_budget';
+$config['database']['dbdriver'] = 'mysqli';
+$config['database']['dbprefix'] = '';
+$config['database']['pconnect'] = TRUE;
+$config['database']['db_debug'] = TRUE;
+$config['database']['cache_on'] = FALSE;
+$config['database']['cachedir'] = '';
+$config['database']['char_set'] = 'utf8';
+$config['database']['dbcollat'] = 'utf8_general_ci';
+$config['database']['swap_pre'] = '';
+$config['database']['autoinit'] = FALSE; // this is set to false as we're going to make sure the database exists before connecting to it
+$config['database']['stricton'] = FALSE;
 
 require_once(dirname(dirname(__FILE__)).'/version.php');
 
-$config['pbio_version'] = floatval($config['version']['major'] . '.'  . $config['version']['minor']);
+$config['version']['base'] = floatval($config['version']['major'] . '.'  . $config['version']['minor']);
 
 /* End of file config.php */
 /* Location: ./application/config/config.php */
-
-

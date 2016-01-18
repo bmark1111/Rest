@@ -1,20 +1,12 @@
 <?php
 
-class upload_controller extends EP_Controller
-{
-	private $debug = TRUE;
+class upload_controller extends EP_Controller {
 
-	public function __construct()
-	{
+	public function __construct() {
 		parent::__construct();
-
-// TEMP UNTIL LOGIN DONE //
-$this->nUserId = 2;
-// TEMP UNTIL LOGIN DONE //
 	}
 
-	public function index($bank_account_id = FALSE, $ignoreFirstLine = FALSE)
-	{
+	public function index($bank_account_id = FALSE, $ignoreFirstLine = FALSE) {
 		$config = array();
 		$config['upload_path'] = '../uploads/';
 		$config['allowed_types'] = 'csv';
@@ -23,8 +15,7 @@ $this->nUserId = 2;
 
 		$this->load->library('upload', $config);
 
-		if (!$this->upload->do_upload('file'))
-		{
+		if (!$this->upload->do_upload('file')) {
 			echo json_encode(array('success' => 0, 'errors' => $this->upload->error_msg));
 		} else {
 			$upload_datetime = date('Y-m-d H:i:s');
@@ -33,11 +24,9 @@ $this->nUserId = 2;
 			while (!feof($file_handle))
 			{
 				$line = fgets($file_handle);
-				if ($ignoreFirstLine != 1)
-				{
+				if ($ignoreFirstLine != 1) {
 					$params = array_map('trim', explode(',', $line));
-					if (count($params) == 5)
-					{
+					if (count($params) == 5) {
 						$transaction = new transaction_upload();
 						$transaction->upload_datetime	= $upload_datetime;
 						$transaction->type				= $params[0];

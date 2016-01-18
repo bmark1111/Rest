@@ -7,10 +7,8 @@ header("Access-Control-Allow-Headers: Origin, X-Requested-With, Content-Type, Ac
 //print_r($_SERVER);die;
 // This is the CORS Preflight request
 // TODO: incorporate this into EP_Controller to give permission to the actual request
-if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS')
-{
-	switch ($_SERVER['HTTP_ACCESS_CONTROL_REQUEST_METHOD'])
-	{
+if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
+	switch ($_SERVER['HTTP_ACCESS_CONTROL_REQUEST_METHOD']) {
 		default:
 			error_log('XMLHttpRequest cannot load ' . $_SERVER['HTTP_HOST'] . '. Origin ' . $_SERVER['HTTP_ORIGIN'] . ' is not allowed by Access-Control-Allow-Origin.');
 			header('HTTP 400 Bad Request', true, 400);
@@ -20,7 +18,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS')
 		case 'PUT':
 		case 'POST':
 		case 'DELETE':
-//print_r($_SERVER);die('xxxxxx');
 			exit;
 			break;
 	}
@@ -35,16 +32,6 @@ header('Access-Control-Allow-Credentials: true');
 
 header('X-Powered-By: Budget 1.0', TRUE);
 
-//$referer = explode('//', $_SERVER['HTTP_REFERER']);
-//$referer = explode('.', $referer[1]);
-//switch ($referer[1]) {
-//	case 'budgettracker':
-//		define('APPLICATION', 'PUBLIC');
-//		break;
-//	default:
-//		define('APPLICATION', 'REST');
-//		break;
-//}
 /*
  *---------------------------------------------------------------
  * APPLICATION ENVIRONMENT
@@ -65,20 +52,17 @@ header('X-Powered-By: Budget 1.0', TRUE);
  */
     $sEnvironment = 'production';
 
-    if(isset($_SERVER['ENVIRONMENT']))
-    {
+    if(isset($_SERVER['ENVIRONMENT'])) {
        $sEnvironment = $_SERVER['ENVIRONMENT'];
     }
-	else if(isset($_SERVER['SERVER_NAME']))
-	{
+	else if(isset($_SERVER['SERVER_NAME'])) {
         $aDomainPieces = explode('.', $_SERVER['SERVER_NAME']);
 
  		$aDomainPieces = array_reverse($aDomainPieces);
 
 		$sEnv = explode('-', $aDomainPieces[1]);
 
-        switch($sEnv)
-        {
+        switch($sEnv) {
             case 'loc':
             case 'dev':
                 $sEnvironment = 'development';
@@ -86,7 +70,7 @@ header('X-Powered-By: Budget 1.0', TRUE);
 			case 'beta':
 				$sEnvironment = 'beta';
 				break;
-			case 'staging':
+			case 'stag':
 				$sEnvironment = 'staging';
                 break;
             default:
@@ -104,8 +88,7 @@ header('X-Powered-By: Budget 1.0', TRUE);
  * Different environments will require different levels of error reporting.
  * By default development will show errors but testing and live will hide them.
  */
-	switch (ENVIRONMENT)
-	{
+	switch (ENVIRONMENT) {
  		case 'local':
 		case 'development':
 		case 'alpha':

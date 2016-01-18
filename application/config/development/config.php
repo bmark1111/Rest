@@ -357,31 +357,7 @@ $config['rewrite_short_tags'] = FALSE;
 */
 $config['proxy_ips'] = '';
 
-/*
-|---------------------------------------------------------------------------
-| Paths To CSS And JS
-|---------------------------------------------------------------------------
-|
-| This is the path for css and javascript from the public directory.
-| Do not include the base path
-| Do include an opening and trailing trailing slash
-|
-*/
-
-$config['css_path'] = '/css/';
-$config['js_path'] = '/js/';
-
-/*
-|---------------------------------------------------------------------------
-| Show PreRelease And Show Cert
-|---------------------------------------------------------------------------
-|
-| These booleans determine what gets shown based on the flags that are set
-|
-*/
-
-$config['show_prerelease'] = FALSE;
-$config['show_cert'] = FALSE;
+$config['referer'] = 'budgettracker';
 
 /*
 |---------------------------------------------------------------------------
@@ -407,7 +383,7 @@ $config['enable_profiler'] = FALSE;
 $config['database']['hostname'] = 'localhost';
 $config['database']['username'] = 'budget';
 $config['database']['password'] = 'budget';
-$config['database']['database'] = 'bdm_budget';
+//$config['database']['database'] = 'bdm_budget';
 $config['database']['dbdriver'] = 'mysqli';
 $config['database']['dbprefix'] = '';
 $config['database']['pconnect'] = TRUE;
@@ -422,5 +398,7 @@ $config['database']['stricton'] = FALSE;
 
 require_once(dirname(dirname(__FILE__)).'/version.php');
 
-$config['pbio_version'] = floatval($config['version']['major'] . '.'  . $config['version']['minor']);
+$config['version']['base'] = floatval($config['version']['major'] . '.'  . $config['version']['minor']);
 
+/* End of file config.php */
+/* Location: ./application/config/config.php */
