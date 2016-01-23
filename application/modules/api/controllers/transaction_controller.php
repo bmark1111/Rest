@@ -127,18 +127,19 @@ class transaction_controller Extends rest_controller {
 		$transaction_date	= (!empty($transaction->transaction_date)) ? $transaction->transaction_date: FALSE;
 		$amount				= (!empty($transaction->amount)) ? $transaction->amount: FALSE;
 		$type				= (!empty($transaction->type)) ? $transaction->type: FALSE;
-		if ($transaction->is_reconciled == 1 || $transaction->is_uploaded == 1) {
+		if ($transaction->is_reconciled != 1 && $transaction->is_uploaded != 1) {
 			// can't edit these fields if uploaded or reconciled
 			$transaction->transaction_date	= date('Y-m-d', strtotime($_POST['transaction_date']));
 			$transaction->type				= $_POST['type'];
 			$transaction->amount			= $_POST['amount'];
-			if ($transaction->is_reconciled != 1 && $transaction->is_uploaded == 1) {
-				// if transaction is not reconciled but uploaded allow account id to be chnaged
-				$transaction->bank_account_id = $_POST['bank_account_id'];
-			}
-			$transaction->description	= $_POST['description'];
-			$transaction->check_num		= (!empty($_POST['check_num'])) ? $_POST['check_num']: NULL;
+			$transaction->bank_account_id	= $_POST['bank_account_id'];
+			$transaction->description		= $_POST['description'];
+			$transaction->check_num			= (!empty($_POST['check_num'])) ? $_POST['check_num']: NULL;
+		} elseif ($transaction->is_reconciled != 1 && $transaction->is_uploaded == 1) {
+			// if transaction is not reconciled but uploaded allow account id to be changed
+			$transaction->bank_account_id	= $_POST['bank_account_id'];
 		}
+
 		$transaction->notes				= (!empty($_POST['notes'])) ? $_POST['notes']: '';
 		$transaction->category_id		= (empty($_POST['splits'])) ? $_POST['category_id']: NULL; // ignore category if splits are present
 		$transaction->save();
