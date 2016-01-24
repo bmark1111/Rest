@@ -533,18 +533,20 @@ class budget_controller Extends rest_controller {
 		}
 
 		$transactions = new transaction();
-		$sql = "(SELECT T.id, T.transaction_date, T.type, T.description, T.notes, T.amount, A.name
+		$sql = "(SELECT T.id, T.transaction_date, T.type, T.description, T.is_uploaded, T.reconciled_date, T.notes, T.amount, A.name AS accountName, B.name AS bankName
 				FROM transaction T
 				LEFT JOIN category C1 ON C1.id = T.category_id
 				LEFT JOIN bank_account A ON A.id = T.bank_account_id
+				LEFT JOIN bank B ON B.id = A.bank_id
 				WHERE T.is_deleted = 0
 						AND T.category_id = " . $category_id . " AND T.category_id IS NOT NULL
 						AND T.`transaction_date` >=  '" . $sd . "'
 						AND T.`transaction_date` <=  '" . $ed . "')
 			UNION
-				(SELECT T.id, T.transaction_date, TS.type, T.description, TS.notes, TS.amount, A.name
+				(SELECT T.id, T.transaction_date, TS.type, T.description, T.is_uploaded, T.reconciled_date, TS.notes, TS.amount, A.name AS accountName, B.name AS bankName
 				FROM transaction T
 				LEFT JOIN bank_account A ON A.id = T.bank_account_id
+				LEFT JOIN bank B ON B.id = A.bank_id
 				LEFT JOIN transaction_split TS ON T.id = TS.transaction_id AND TS.is_deleted = 0
 				LEFT JOIN category C2 ON C2.id = TS.category_id
 				WHERE T.is_deleted = 0

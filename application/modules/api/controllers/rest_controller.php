@@ -81,16 +81,14 @@ class rest_controller Extends EP_Controller {
 
 		$input = file_get_contents('php://input');
 		$_POST = json_decode($input, TRUE);
-		$date = explode('T', $_POST['date']);
-		if (!empty($date[0]) && $this->_isValidDate($date[0]) && !empty($_POST['account_id']) && is_numeric($_POST['account_id'])) {
+		if (!empty($_POST['date']) && $this->_isValidDate($_POST['date']) && !empty($_POST['account_id']) && is_numeric($_POST['account_id'])) {
 			$sql = "UPDATE	transaction "
-				. "SET		reconciled_date = '" . $date[0] . "' "
+				. "SET		reconciled_date = '" . $_POST['date'] . "' "
 				. "WHERE	reconciled_date IS NULL"
 				. "		AND is_deleted = 0"
 				. "		AND	bank_account_id = " . $_POST['account_id']
-				. "		AND	transaction_date <= '" . $date[0] . "'";
+				. "		AND	transaction_date <= '" . $_POST['date'] . "'";
 			$transaction = new transaction();
-//die($sql);
 			$transaction->queryAll($sql);
 		} else {
 			$this->ajax->addError(new AjaxError("Invalid reconcile transaction date (rest/reconcileTransactions)"));
