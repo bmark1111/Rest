@@ -98,6 +98,7 @@ class upload_controller Extends rest_controller {
 
 		$uploaded = new transaction_upload($id);
 		if ($uploaded->numRows()) {
+			// find any current transactions that could mnatch this uploaded transaction
 			isset($uploaded->bank_account);
 			isset($uploaded->bank_account->bank);
 
@@ -119,12 +120,12 @@ class upload_controller Extends rest_controller {
 			$ed = date('Y-m-d', strtotime($uploaded->transaction_date . " +7 DAYS"));
 			$transactions->where('transaction_date >= ', $sd);
 			$transactions->where('transaction_date <= ', $ed);
-			$transactions->where('amount', $uploaded->amount);
+			$transactions->where('ROUND(amount)', intval($uploaded->amount), FALSE);
 			$transactions->orderBy('transaction_date', 'DESC');
 			$transactions->result();
 			foreach ($transactions as $transaction) {
 				isset($transaction->category);
-				isset($transaction->bank_account);
+				isset($transaction->bank_account->bank);
 			}
 
 			$this->ajax->setData('transactions', $transactions);
